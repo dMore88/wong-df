@@ -4609,7 +4609,11 @@ class WongApp {
       if (isChecked) {
         repAccordion?.classList.remove("hidden");
         if (this.studioEngine.state.modifiers.radiation.enabled) {
-          this.showToast("Repetition activada: Ten en cuenta que Radiation está rigiendo en coordenadas polares. Desactiva Radiation para ver la retícula ortogonal.", 4500);
+          this.studioEngine.state.modifiers.radiation.enabled = false;
+          const radToggleEl = document.getElementById("mod-radiation-toggle");
+          if (radToggleEl) radToggleEl.checked = false;
+          document.getElementById("accordion-radiation")?.classList.add("hidden");
+          this.showToast("Repetición activada: cambio a la retícula cartesiana (se desactiva Radiación).", 4000);
         } else {
           this.showToast("Repetition Modifier Activated (Cartesian Matrix)");
         }
@@ -4675,14 +4679,26 @@ class WongApp {
       this.studioEngine.state.modifiers.structure.enabled = isChecked;
       if (isChecked) {
         structAccordion?.classList.remove("hidden");
-        const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
         const hasRad = this.studioEngine.state.modifiers.radiation.enabled;
-        if (!hasRep) {
-          this.showToast("Structure modula los intervalos de la retícula. Activa 'Repetition' para visualizar su efecto sobre el diseño.", 4200);
-        } else if (hasRad) {
-          this.showToast("Structure rige sobre la retícula ortogonal (Repetition). En el modo polar actual prevalece Radiation.", 4200);
+        if (hasRad) {
+          this.studioEngine.state.modifiers.radiation.enabled = false;
+          const radToggleEl = document.getElementById("mod-radiation-toggle");
+          if (radToggleEl) radToggleEl.checked = false;
+          document.getElementById("accordion-radiation")?.classList.add("hidden");
+
+          this.studioEngine.state.modifiers.repetition.enabled = true;
+          const repToggleEl = document.getElementById("mod-repetition-toggle");
+          if (repToggleEl) repToggleEl.checked = true;
+          document.getElementById("accordion-repetition")?.classList.remove("hidden");
+
+          this.showToast("Estructura activada: cambio a la retícula cartesiana (se desactiva Radiación).", 4000);
         } else {
-          this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
+          const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
+          if (!hasRep) {
+            this.showToast("Structure modula los intervalos de la retícula. Activa 'Repetition' para visualizar su efecto sobre el diseño.", 4200);
+          } else {
+            this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
+          }
         }
       } else {
         structAccordion?.classList.add("hidden");
@@ -4861,14 +4877,29 @@ class WongApp {
       this.studioEngine.state.modifiers.radiation.enabled = isChecked;
       if (isChecked) {
         radAccordion?.classList.remove("hidden");
+        const hadCartesian = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.structure.enabled;
+
         if (this.studioEngine.state.modifiers.repetition.enabled) {
-          this.showToast("Radiation activada: la estructura polar prevalece sobre la retícula ortogonal de Repetition.", 4500);
+          this.studioEngine.state.modifiers.repetition.enabled = false;
+          const repToggleEl = document.getElementById("mod-repetition-toggle");
+          if (repToggleEl) repToggleEl.checked = false;
+          document.getElementById("accordion-repetition")?.classList.add("hidden");
+        }
+        if (this.studioEngine.state.modifiers.structure.enabled) {
+          this.studioEngine.state.modifiers.structure.enabled = false;
+          const structToggleEl = document.getElementById("mod-structure-toggle");
+          if (structToggleEl) structToggleEl.checked = false;
+          document.getElementById("accordion-structure")?.classList.add("hidden");
+        }
+
+        if (hadCartesian) {
+          this.showToast("Radiación activada: cambio al sistema polar (se desactivan Repetición y Estructura).", 4000);
         } else {
           this.showToast("Radiation Active: Polar Structural Framework");
         }
       } else {
         radAccordion?.classList.add("hidden");
-        this.showToast("Radiation Deactivated: Reverted to Cartesian Grid");
+        this.showToast("Radiation Deactivated: Reverted to Base Study");
       }
       this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
