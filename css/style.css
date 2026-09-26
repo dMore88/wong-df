@@ -128,3 +128,86 @@ input[type="checkbox"] {
   border-color: var(--text-primary);
   transform: translateY(-1px);
 }
+
+/* Modern iOS / Figma Style Switch Toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider-toggle {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border-color);
+  transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 18px;
+}
+.slider-toggle:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #ffffff;
+  transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+input:checked + .slider-toggle {
+  background-color: var(--accent);
+}
+input:checked + .slider-toggle:before {
+  transform: translateX(16px);
+}
+[data-theme="dark"] .slider-toggle:before {
+  background-color: #ffffff;
+}
+
+/* Geometric Shape Button */
+.shape-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.shape-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+}
+.shape-btn.active {
+  background: var(--text-primary);
+  color: var(--bg-card);
+  border-color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* Studio Matboard Frame */
+.studio-matboard {
+  background: var(--bg-card);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border-color);
+  border-radius: 12px;
+}
+[data-theme="dark"] .studio-matboard {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-color);
+}
+
+/* Accordion transition helper */
+.accordion-content {
+  transition: max-height 0.25s ease-out, opacity 0.2s ease-out;
+}

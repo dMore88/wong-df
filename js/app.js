@@ -1,8 +1,10 @@
 // Main Application Controller for Wucius Wong 2D Design Studio
 import { chaptersContent } from './data/chapters-content.js';
 import { CanvasUtils } from './canvas-utils.js';
+import { Shapes } from './studio/shapes.js';
+import { StudioEngine, defaultStudioState } from './studio/studio-engine.js';
 
-// Import all 12 Two-Dimensional Chapter Modules
+// Import all 12 Two-Dimensional Chapter Modules (for Theory reference plate)
 import { Chapter1 } from './chapters/ch1-introduction.js';
 import { Chapter2 } from './chapters/ch2-form.js';
 import { Chapter3 } from './chapters/ch3-repetition.js';
@@ -33,16 +35,15 @@ class WongApp {
       12: Chapter12
     };
 
+    this.currentMode = "studio"; // "studio" or "theory"
     this.currentChapterId = 1;
     this.currentPaletteKey = "monochrome";
-    this.currentParams = {};
-    this.viewMode = "split"; // "split", "studio", "theory"
     this.theme = "light";
 
-    // DOM Elements
-    this.canvas = document.getElementById("main-canvas");
-    this.ctx = null;
-    this.canvasMetrics = null;
+    // Engines & Canvas references
+    this.studioCanvas = document.getElementById("studio-canvas");
+    this.theoryCanvas = document.getElementById("theory-canvas");
+    this.studioEngine = new StudioEngine(this.studioCanvas);
 
     this.init();
   }
@@ -53,10 +54,16 @@ class WongApp {
       this.setTheme("dark");
     }
 
-    this.initSidebarNav();
-    this.initDropdown();
+    this.initNavigation();
+    this.initStudioShapePickers();
+    this.initStudioEventListeners();
+    this.initTheorySidebar();
+    this.initTheoryDropdown();
     this.initGlobalEvents();
-    this.loadChapter(1);
+
+    // Default mode is Studio
+    this.setMode("studio");
+    this.loadTheoryChapter(1);
 
     // Initial lucide icons render
     if (window.lucide) {
@@ -74,9 +81,377 @@ class WongApp {
         : `<i data-lucide="moon" class="w-4 h-4"></i>`;
       if (window.lucide) window.lucide.createIcons();
     }
+    this.renderCurrentView();
   }
 
-  initSidebarNav() {
+  // ============================================================
+  // NAVIGATION & VIEW MODE SWITCHING (Theory vs Studio)
+  // ============================================================
+  initNavigation() {
+    const theoryBtn = document.getElementById("mode-theory-btn");
+    const studioBtn = document.getElementById("mode-studio-btn");
+
+    theoryBtn?.addEventListener("click", () => this.setMode("theory"));
+    studioBtn?.addEventListener("click", () => this.setMode("studio"));
+  }
+
+  setMode(mode) {
+    this.currentMode = mode;
+
+    const theoryView = document.getElementById("theory-view");
+    const studioView = document.getElementById("studio-view");
+    const theoryBtn = document.getElementById("mode-theory-btn");
+    const studioBtn = document.getElementById("mode-studio-btn");
+    const theoryNav = document.getElementById("theory-chapter-nav");
+    const studioHeader = document.getElementById("studio-center-header");
+    const modeBadge = document.getElementById("nav-mode-badge");
+    const subtitle = document.getElementById("nav-subtitle");
+
+    if (mode === "studio") {
+      theoryView?.classList.add("hidden");
+      studioView?.classList.remove("hidden");
+
+      studioBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
+      theoryBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
+
+      theoryNav?.classList.add("hidden");
+      theoryNav?.classList.remove("flex");
+      studioHeader?.classList.remove("hidden");
+      studioHeader?.classList.add("flex");
+
+      if (modeBadge) modeBadge.textContent = "Studio";
+      if (subtitle) subtitle.textContent = "Principles of Two-Dimensional Design • Composition Studio";
+
+      this.renderStudio();
+    } else {
+      studioView?.classList.add("hidden");
+      theoryView?.classList.remove("hidden");
+
+      theoryBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
+      studioBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
+
+      studioHeader?.classList.add("hidden");
+      studioHeader?.classList.remove("flex");
+      theoryNav?.classList.remove("hidden");
+      theoryNav?.classList.add("flex");
+
+      if (modeBadge) modeBadge.textContent = "Theory";
+      if (subtitle) subtitle.textContent = "Principles of Two-Dimensional Design • Handbook & Theory";
+
+      this.renderTheoryPlate();
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  renderCurrentView() {
+    if (this.currentMode === "studio") {
+      this.renderStudio();
+    } else {
+      this.renderTheoryPlate();
+    }
+  }
+
+  // ============================================================
+  // STUDIO: COMPOSITION ENGINE & INTERFACE
+  // ============================================================
+  initStudioShapePickers() {
+    const containerA = document.getElementById("form-a-shape-picker");
+    const containerB = document.getElementById("form-b-shape-picker");
+
+    if (!containerA || !containerB) return;
+
+    containerA.innerHTML = "";
+    containerB.innerHTML = "";
+
+    const shapeKeys = Object.keys(Shapes);
+
+    shapeKeys.forEach(key => {
+      const shape = Shapes[key];
+
+      // Form A button
+      const btnA = document.createElement("button");
+      btnA.className = `shape-btn ${this.studioEngine.state.formA.shape === key ? 'active' : ''}`;
+      btnA.dataset.shape = key;
+      btnA.title = shape.name;
+      btnA.innerHTML = shape.iconSvg;
+      btnA.addEventListener("click", () => {
+        containerA.querySelectorAll(".shape-btn").forEach(b => b.classList.remove("active"));
+        btnA.classList.add("active");
+        this.studioEngine.state.formA.shape = key;
+        const nameBadge = document.getElementById("form-a-name-badge");
+        if (nameBadge) nameBadge.textContent = shape.name;
+        this.renderStudio();
+      });
+      containerA.appendChild(btnA);
+
+      // Form B button
+      const btnB = document.createElement("button");
+      btnB.className = `shape-btn ${this.studioEngine.state.formB.shape === key ? 'active' : ''}`;
+      btnB.dataset.shape = key;
+      btnB.title = shape.name;
+      btnB.innerHTML = shape.iconSvg;
+      btnB.addEventListener("click", () => {
+        containerB.querySelectorAll(".shape-btn").forEach(b => b.classList.remove("active"));
+        btnB.classList.add("active");
+        this.studioEngine.state.formB.shape = key;
+        this.renderStudio();
+      });
+      containerB.appendChild(btnB);
+    });
+  }
+
+  initStudioEventListeners() {
+    // Form A Scale & Rotation
+    const scaleA = document.getElementById("input-form-a-scale");
+    const rotA = document.getElementById("input-form-a-rotation");
+    const valScaleA = document.getElementById("val-form-a-scale");
+    const valRotA = document.getElementById("val-form-a-rotation");
+
+    scaleA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formA.scale = v;
+      if (valScaleA) valScaleA.textContent = v;
+      this.renderStudio();
+    });
+
+    rotA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formA.rotation = v;
+      if (valRotA) valRotA.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    // Form B Scale, Rotation, Offsets
+    const scaleB = document.getElementById("input-form-b-scale");
+    const rotB = document.getElementById("input-form-b-rotation");
+    const offX = document.getElementById("input-form-b-offset-x");
+    const offY = document.getElementById("input-form-b-offset-y");
+    const valScaleB = document.getElementById("val-form-b-scale");
+    const valRotB = document.getElementById("val-form-b-rotation");
+    const valOffX = document.getElementById("val-form-b-offset-x");
+    const valOffY = document.getElementById("val-form-b-offset-y");
+
+    scaleB?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formB.scale = v;
+      if (valScaleB) valScaleB.textContent = v;
+      this.renderStudio();
+    });
+
+    rotB?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formB.rotation = v;
+      if (valRotB) valRotB.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    offX?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formB.offsetX = v;
+      if (valOffX) valOffX.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    offY?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formB.offsetY = v;
+      if (valOffY) valOffY.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    // Toggle Form B Enabled/Disabled
+    const toggleFormBBtn = document.getElementById("toggle-form-b-btn");
+    const formBStatusBadge = document.getElementById("form-b-status-badge");
+    const formBControls = document.getElementById("form-b-controls");
+    const formBPicker = document.getElementById("form-b-shape-picker");
+
+    toggleFormBBtn?.addEventListener("click", () => {
+      const current = this.studioEngine.state.formB.enabled;
+      this.studioEngine.state.formB.enabled = !current;
+      const isEnabled = this.studioEngine.state.formB.enabled;
+
+      if (isEnabled) {
+        formBStatusBadge.textContent = "Active";
+        formBStatusBadge.className = "text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+        formBControls.classList.remove("opacity-40", "pointer-events-none");
+        formBPicker.classList.remove("opacity-40", "pointer-events-none");
+        this.showToast("Form B Activated");
+      } else {
+        formBStatusBadge.textContent = "Inactive";
+        formBStatusBadge.className = "text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-muted)]";
+        formBControls.classList.add("opacity-40", "pointer-events-none");
+        formBPicker.classList.add("opacity-40", "pointer-events-none");
+        this.showToast("Form B Disabled (Single Form Mode)");
+      }
+      this.renderStudio();
+    });
+
+    // Interrelation Select
+    const interrelationSelect = document.getElementById("interrelation-select");
+    interrelationSelect?.addEventListener("change", (e) => {
+      this.studioEngine.state.interrelation = e.target.value;
+      this.renderStudio();
+    });
+
+    // Repetition Modifier Toggle (Accordion Expansion)
+    const repToggle = document.getElementById("mod-repetition-toggle");
+    const repAccordion = document.getElementById("accordion-repetition");
+
+    repToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.repetition.enabled = isChecked;
+      if (isChecked) {
+        repAccordion?.classList.remove("hidden");
+        this.showToast("Repetition Modifier Activated");
+      } else {
+        repAccordion?.classList.add("hidden");
+        this.showToast("Repetition Modifier Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    // Repetition Grid Variation
+    document.getElementById("rep-grid-type")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.repetition.gridType = e.target.value;
+      this.renderStudio();
+    });
+
+    // Repetition Columns & Rows
+    const colsInput = document.getElementById("input-rep-cols");
+    const rowsInput = document.getElementById("input-rep-rows");
+    const valCols = document.getElementById("val-rep-cols");
+    const valRows = document.getElementById("val-rep-rows");
+
+    colsInput?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.repetition.cols = v;
+      if (valCols) valCols.textContent = v;
+      this.renderStudio();
+    });
+
+    rowsInput?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.repetition.rows = v;
+      if (valRows) valRows.textContent = v;
+      this.renderStudio();
+    });
+
+    // Repetition Checkboxes
+    document.getElementById("check-rep-active")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.repetition.activeClipping = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-rep-visible")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.repetition.showGridLines = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-rep-checker")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.repetition.checkerInvert = e.target.checked;
+      this.renderStudio();
+    });
+
+    // Studio Canvas Toolbar Actions
+    document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
+      this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
+      this.renderStudio();
+    });
+
+    document.getElementById("studio-invert-toggle")?.addEventListener("click", () => {
+      this.studioEngine.state.invertFigureGround = !this.studioEngine.state.invertFigureGround;
+      this.renderStudio();
+    });
+
+    document.getElementById("studio-reset-btn")?.addEventListener("click", () => {
+      this.studioEngine.state = JSON.parse(JSON.stringify(defaultStudioState));
+      this.syncStudioControlsFromState();
+      this.renderStudio();
+      this.showToast("Studio Parameters Reset");
+    });
+
+    document.getElementById("studio-copy-svg-btn")?.addEventListener("click", () => {
+      const dataUrl = this.studioCanvas.toDataURL("image/png");
+      navigator.clipboard.writeText(dataUrl).then(() => {
+        this.showToast("Canvas image copied to clipboard");
+      });
+    });
+  }
+
+  syncStudioControlsFromState() {
+    const s = this.studioEngine.state;
+    // Sliders
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    const setText = (id, txt) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt;
+    };
+
+    setVal("input-form-a-scale", s.formA.scale);
+    setText("val-form-a-scale", s.formA.scale);
+    setVal("input-form-a-rotation", s.formA.rotation);
+    setText("val-form-a-rotation", `${s.formA.rotation}°`);
+
+    setVal("input-form-b-scale", s.formB.scale);
+    setText("val-form-b-scale", s.formB.scale);
+    setVal("input-form-b-rotation", s.formB.rotation);
+    setText("val-form-b-rotation", `${s.formB.rotation}°`);
+    setVal("input-form-b-offset-x", s.formB.offsetX);
+    setText("val-form-b-offset-x", `${s.formB.offsetX}px`);
+    setVal("input-form-b-offset-y", s.formB.offsetY);
+    setText("val-form-b-offset-y", `${s.formB.offsetY}px`);
+
+    setVal("interrelation-select", s.interrelation);
+
+    const repToggle = document.getElementById("mod-repetition-toggle");
+    if (repToggle) repToggle.checked = s.modifiers.repetition.enabled;
+
+    const repAccordion = document.getElementById("accordion-repetition");
+    if (repAccordion) {
+      if (s.modifiers.repetition.enabled) repAccordion.classList.remove("hidden");
+      else repAccordion.classList.add("hidden");
+    }
+
+    setVal("rep-grid-type", s.modifiers.repetition.gridType);
+    setVal("input-rep-cols", s.modifiers.repetition.cols);
+    setText("val-rep-cols", s.modifiers.repetition.cols);
+    setVal("input-rep-rows", s.modifiers.repetition.rows);
+    setText("val-rep-rows", s.modifiers.repetition.rows);
+
+    const checkActive = document.getElementById("check-rep-active");
+    if (checkActive) checkActive.checked = s.modifiers.repetition.activeClipping;
+    const checkVis = document.getElementById("check-rep-visible");
+    if (checkVis) checkVis.checked = s.modifiers.repetition.showGridLines;
+    const checkCheck = document.getElementById("check-rep-checker");
+    if (checkCheck) checkCheck.checked = s.modifiers.repetition.checkerInvert;
+
+    this.initStudioShapePickers();
+    this.updateStudioColophon();
+  }
+
+  updateStudioColophon() {
+    const colophon = document.getElementById("studio-colophon-text");
+    if (colophon) {
+      colophon.textContent = this.studioEngine.getColophonString();
+    }
+  }
+
+  renderStudio() {
+    if (!this.studioCanvas) return;
+    const palette = CanvasUtils.palettes[this.currentPaletteKey] || CanvasUtils.palettes.monochrome;
+    this.studioEngine.render(palette);
+    this.updateStudioColophon();
+  }
+
+  // ============================================================
+  // THEORY: HANDBOOK, READING & CLASSICAL REFERENCE PLATE
+  // ============================================================
+  initTheorySidebar() {
     const list = document.getElementById("chapters-nav-list");
     if (!list) return;
 
@@ -98,12 +473,15 @@ class WongApp {
         </div>
       `;
 
-      btn.addEventListener("click", () => this.loadChapter(ch.id));
+      btn.addEventListener("click", () => {
+        this.loadTheoryChapter(ch.id);
+      });
+
       list.appendChild(btn);
     });
   }
 
-  initDropdown() {
+  initTheoryDropdown() {
     const dropdown = document.getElementById("chapter-dropdown");
     if (!dropdown) return;
 
@@ -111,56 +489,34 @@ class WongApp {
     chaptersContent.forEach(ch => {
       const opt = document.createElement("option");
       opt.value = ch.id;
-      opt.textContent = `Ch. ${ch.number}: ${ch.title}`;
+      opt.textContent = `Ch ${ch.number}: ${ch.title}`;
       dropdown.appendChild(opt);
     });
 
     dropdown.addEventListener("change", (e) => {
-      this.loadChapter(parseInt(e.target.value, 10));
+      this.loadTheoryChapter(parseInt(e.target.value, 10));
     });
   }
 
-  loadChapter(chapterId) {
-    if (!this.chaptersMap[chapterId]) return;
-    this.currentChapterId = chapterId;
+  loadTheoryChapter(id) {
+    this.currentChapterId = id;
 
-    const module = this.chaptersMap[chapterId];
-    const content = chaptersContent.find(c => c.id === chapterId);
-
-    // Deep clone default params
-    this.currentParams = JSON.parse(JSON.stringify(module.defaultParams));
-
-    // Update Dropdown and Sidebar selection
+    // Update Dropdown & Sidebar active highlights
     const dropdown = document.getElementById("chapter-dropdown");
-    if (dropdown) dropdown.value = chapterId;
+    if (dropdown) dropdown.value = id;
 
     document.querySelectorAll(".ch-nav-btn").forEach(btn => {
-      const id = parseInt(btn.dataset.id, 10);
-      if (id === chapterId) {
-        btn.classList.add("bg-[var(--bg-secondary)]", "border-accent", "font-medium", "shadow-sm");
-        btn.classList.remove("border-transparent");
+      if (parseInt(btn.dataset.id, 10) === id) {
+        btn.className = "w-full text-left p-2.5 rounded-lg border border-accent bg-[var(--bg-secondary)] font-medium shadow-sm flex items-start gap-2.5 ch-nav-btn";
       } else {
-        btn.classList.remove("bg-[var(--bg-secondary)]", "border-accent", "font-medium", "shadow-sm");
-        btn.classList.add("border-transparent");
+        btn.className = "w-full text-left p-2.5 rounded-lg border border-transparent hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] flex items-start gap-2.5 ch-nav-btn";
       }
     });
 
-    // Populate Theory Panel
-    this.renderTheory(content);
+    const content = chaptersContent.find(c => c.id === id);
+    if (!content) return;
 
-    // Populate Controls and Presets
-    this.renderPresets(module.presets || []);
-    this.renderControls(module.controls || []);
-
-    // Render Canvas
-    this.renderCanvas();
-
-    if (window.lucide) {
-      window.lucide.createIcons();
-    }
-  }
-
-  renderTheory(content) {
+    // Render Text Pedagogy
     document.getElementById("ch-number-badge").textContent = `CHAPTER ${content.number}`;
     document.getElementById("ch-read-time").textContent = content.readingTime;
     document.getElementById("ch-title").textContent = content.title;
@@ -169,26 +525,30 @@ class WongApp {
 
     // Badges
     const conceptsBox = document.getElementById("ch-concepts-container");
-    conceptsBox.innerHTML = "";
-    content.keyConcepts.forEach(k => {
-      const tag = document.createElement("span");
-      tag.className = "concept-tag";
-      tag.textContent = k;
-      conceptsBox.appendChild(tag);
-    });
+    if (conceptsBox) {
+      conceptsBox.innerHTML = "";
+      content.keyConcepts.forEach(k => {
+        const tag = document.createElement("span");
+        tag.className = "concept-tag";
+        tag.textContent = k;
+        conceptsBox.appendChild(tag);
+      });
+    }
 
     // Sections
     const sectionsBox = document.getElementById("ch-sections-container");
-    sectionsBox.innerHTML = "";
-    content.sections.forEach(sec => {
-      const div = document.createElement("div");
-      div.className = "space-y-2";
-      div.innerHTML = `
-        <h3 class="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1">${sec.heading}</h3>
-        <p class="text-xs text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${sec.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</p>
-      `;
-      sectionsBox.appendChild(div);
-    });
+    if (sectionsBox) {
+      sectionsBox.innerHTML = "";
+      content.sections.forEach(sec => {
+        const div = document.createElement("div");
+        div.className = "space-y-2";
+        div.innerHTML = `
+          <h3 class="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1">${sec.heading}</h3>
+          <p class="text-xs text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">${sec.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</p>
+        `;
+        sectionsBox.appendChild(div);
+      });
+    }
 
     // Exercise
     if (content.exercise) {
@@ -196,166 +556,48 @@ class WongApp {
       document.getElementById("ch-exercise-instructions").textContent = content.exercise.instructions;
       document.getElementById("ch-exercise-goal").textContent = content.exercise.targetGoal;
     }
-  }
 
-  renderPresets(presets) {
-    const container = document.getElementById("presets-container");
-    if (!container) return;
-
-    container.innerHTML = "";
-    if (presets.length === 0) {
-      container.innerHTML = `<span class="text-xs text-[var(--text-muted)] font-mono">No preset presets defined.</span>`;
-      return;
+    const figTitle = document.getElementById("theory-fig-title");
+    if (figTitle) {
+      figTitle.textContent = `Ch ${content.number}: ${content.title}`;
     }
 
-    presets.forEach(p => {
-      const btn = document.createElement("button");
-      btn.className = "preset-btn text-xs font-mono px-3 py-1.5 rounded bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] transition-all";
-      btn.textContent = p.name;
-      btn.title = p.description || "";
-      btn.addEventListener("click", () => {
-        Object.assign(this.currentParams, p.params);
-        this.updateControlInputs();
-        this.renderCanvas();
-        this.showToast(`Loaded Preset: ${p.name}`);
-      });
-      container.appendChild(btn);
-    });
+    this.renderTheoryPlate();
   }
 
-  renderControls(controls) {
-    const grid = document.getElementById("controls-grid");
-    if (!grid) return;
-
-    grid.innerHTML = "";
-    controls.forEach(ctrl => {
-      const wrapper = document.createElement("div");
-      wrapper.className = "p-2.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-color)] flex flex-col justify-between gap-1.5";
-
-      if (ctrl.type === "range") {
-        const val = this.currentParams[ctrl.id] ?? ctrl.min;
-        wrapper.innerHTML = `
-          <div class="flex items-center justify-between text-[11px] font-medium">
-            <label for="ctrl-${ctrl.id}" class="truncate text-[var(--text-primary)]">${ctrl.label}</label>
-            <span id="val-${ctrl.id}" class="font-mono text-accent font-bold">${val}${ctrl.unit || ''}</span>
-          </div>
-          <input type="range" id="ctrl-${ctrl.id}" min="${ctrl.min}" max="${ctrl.max}" step="${ctrl.step || 1}" value="${val}">
-        `;
-        const input = wrapper.querySelector("input");
-        const valDisplay = wrapper.querySelector(`#val-${ctrl.id}`);
-        input.addEventListener("input", (e) => {
-          const num = parseFloat(e.target.value);
-          this.currentParams[ctrl.id] = num;
-          valDisplay.textContent = `${num}${ctrl.unit || ''}`;
-          this.renderCanvas();
-        });
-
-      } else if (ctrl.type === "select") {
-        const optionsHtml = ctrl.options.map(opt => 
-          `<option value="${opt.value}" ${this.currentParams[ctrl.id] === opt.value ? 'selected' : ''}>${opt.label}</option>`
-        ).join("");
-
-        wrapper.innerHTML = `
-          <label for="ctrl-${ctrl.id}" class="text-[11px] font-medium text-[var(--text-primary)] truncate">${ctrl.label}</label>
-          <div class="relative mt-0.5">
-            <select id="ctrl-${ctrl.id}" class="w-full appearance-none bg-[var(--bg-card)] border border-[var(--border-color)] text-xs py-1 px-2 pr-6 rounded focus:outline-none focus:border-accent">
-              ${optionsHtml}
-            </select>
-          </div>
-        `;
-        const select = wrapper.querySelector("select");
-        select.addEventListener("change", (e) => {
-          this.currentParams[ctrl.id] = e.target.value;
-          this.renderCanvas();
-        });
-
-      } else if (ctrl.type === "checkbox") {
-        const checked = !!this.currentParams[ctrl.id];
-        wrapper.innerHTML = `
-          <label class="flex items-center justify-between cursor-pointer gap-2 text-[11px] font-medium text-[var(--text-primary)]">
-            <span class="truncate">${ctrl.label}</span>
-            <input type="checkbox" id="ctrl-${ctrl.id}" ${checked ? 'checked' : ''}>
-          </label>
-        `;
-        const checkbox = wrapper.querySelector("input");
-        checkbox.addEventListener("change", (e) => {
-          this.currentParams[ctrl.id] = e.target.checked;
-          this.renderCanvas();
-        });
-      }
-
-      grid.appendChild(wrapper);
-    });
-  }
-
-  updateControlInputs() {
-    const module = this.chaptersMap[this.currentChapterId];
-    if (!module || !module.controls) return;
-
-    module.controls.forEach(ctrl => {
-      const input = document.getElementById(`ctrl-${ctrl.id}`);
-      if (!input) return;
-
-      if (ctrl.type === "range") {
-        input.value = this.currentParams[ctrl.id];
-        const valSpan = document.getElementById(`val-${ctrl.id}`);
-        if (valSpan) valSpan.textContent = `${this.currentParams[ctrl.id]}${ctrl.unit || ''}`;
-      } else if (ctrl.type === "select") {
-        input.value = this.currentParams[ctrl.id];
-      } else if (ctrl.type === "checkbox") {
-        input.checked = !!this.currentParams[ctrl.id];
-      }
-    });
-  }
-
-  renderCanvas() {
-    if (!this.canvas) return;
-    const { ctx, width, height } = CanvasUtils.setupCanvas(this.canvas);
-    this.ctx = ctx;
-    this.canvasMetrics = { width, height };
-
+  renderTheoryPlate() {
+    if (!this.theoryCanvas) return;
+    const { ctx, width, height } = CanvasUtils.setupCanvas(this.theoryCanvas);
     const module = this.chaptersMap[this.currentChapterId];
     const palette = CanvasUtils.palettes[this.currentPaletteKey] || CanvasUtils.palettes.monochrome;
 
     if (module && typeof module.render === "function") {
-      module.render(ctx, width, height, this.currentParams, palette);
+      const params = module.presets && module.presets.length > 0
+        ? { ...module.defaultParams, ...module.presets[0].params }
+        : module.defaultParams;
+      module.render(ctx, width, height, params, palette);
     }
   }
 
+  stepTheoryChapter(delta) {
+    let nextId = this.currentChapterId + delta;
+    if (nextId < 1) nextId = 12;
+    if (nextId > 12) nextId = 1;
+    this.loadTheoryChapter(nextId);
+  }
+
+  // ============================================================
+  // GLOBAL APPLICATION EVENTS
+  // ============================================================
   initGlobalEvents() {
-    // Canvas Click Interaction (e.g. for anomaly epicenter, concentration attractors)
-    this.canvas.addEventListener("click", (e) => {
-      const module = this.chaptersMap[this.currentChapterId];
-      if (module && typeof module.onCanvasClick === "function") {
-        const rect = this.canvas.getBoundingClientRect();
-        module.onCanvasClick(e, rect, this.currentParams);
-        this.renderCanvas();
-        this.updateControlInputs();
-      }
-    });
-
-    // Window Resize
     window.addEventListener("resize", () => {
-      this.renderCanvas();
-    });
-
-    // Navigation buttons
-    document.getElementById("prev-ch-btn")?.addEventListener("click", () => this.stepChapter(-1));
-    document.getElementById("next-ch-btn")?.addEventListener("click", () => this.stepChapter(1));
-    document.getElementById("footer-prev-btn")?.addEventListener("click", () => this.stepChapter(-1));
-    document.getElementById("footer-next-btn")?.addEventListener("click", () => this.stepChapter(1));
-
-    // Keyboard Shortcuts (Arrow keys)
-    window.addEventListener("keydown", (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
-      if (e.key === "ArrowLeft") this.stepChapter(-1);
-      if (e.key === "ArrowRight") this.stepChapter(1);
+      this.renderCurrentView();
     });
 
     // Palette Dropdown
     document.getElementById("palette-dropdown")?.addEventListener("change", (e) => {
       this.currentPaletteKey = e.target.value;
-      this.renderCanvas();
+      this.renderCurrentView();
     });
 
     // Theme Toggle
@@ -363,86 +605,30 @@ class WongApp {
       this.setTheme(this.theme === "dark" ? "light" : "dark");
     });
 
-    // Reset Defaults Button
-    document.getElementById("reset-params-btn")?.addEventListener("click", () => {
-      const module = this.chaptersMap[this.currentChapterId];
-      if (module) {
-        this.currentParams = JSON.parse(JSON.stringify(module.defaultParams));
-        this.updateControlInputs();
-        this.renderCanvas();
-        this.showToast("Reset to chapter defaults");
+    // Theory Chapter Navigation Buttons
+    document.getElementById("prev-ch-btn")?.addEventListener("click", () => this.stepTheoryChapter(-1));
+    document.getElementById("next-ch-btn")?.addEventListener("click", () => this.stepTheoryChapter(1));
+    document.getElementById("footer-prev-btn")?.addEventListener("click", () => this.stepTheoryChapter(-1));
+    document.getElementById("footer-next-btn")?.addEventListener("click", () => this.stepTheoryChapter(1));
+
+    // Keyboard Shortcuts (Arrow keys for Theory)
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      if (this.currentMode === "theory") {
+        if (e.key === "ArrowLeft") this.stepTheoryChapter(-1);
+        if (e.key === "ArrowRight") this.stepTheoryChapter(1);
       }
     });
 
-    // Canvas Grid Toggle
-    document.getElementById("canvas-grid-toggle")?.addEventListener("click", () => {
-      const keys = ["showReferenceFrame", "showGrid", "showIsometricGuides", "isVisible"];
-      for (const k of keys) {
-        if (this.currentParams[k] !== undefined) {
-          this.currentParams[k] = !this.currentParams[k];
-          break;
-        }
-      }
-      this.updateControlInputs();
-      this.renderCanvas();
-      this.showToast("Toggled structural grid");
-    });
-
-    // Export PNG
-    document.getElementById("export-png-btn")?.addEventListener("click", () => {
-      const filename = `wong-ch${this.currentChapterId}-${Date.now()}.png`;
-      CanvasUtils.exportPNG(this.canvas, filename);
+    // Export Button
+    document.getElementById("export-top-btn")?.addEventListener("click", () => {
+      const canvasToExport = this.currentMode === "studio" ? this.studioCanvas : this.theoryCanvas;
+      const filename = this.currentMode === "studio"
+        ? `wong-studio-composition-${Date.now()}.png`
+        : `wong-ch${this.currentChapterId}-plate.png`;
+      CanvasUtils.exportPNG(canvasToExport, filename);
       this.showToast(`Exported ${filename}`);
     });
-
-    // Copy SVG / SVG Code
-    document.getElementById("copy-svg-btn")?.addEventListener("click", () => {
-      const dataUrl = this.canvas.toDataURL("image/png");
-      navigator.clipboard.writeText(dataUrl).then(() => {
-        this.showToast("Copied canvas data image URL to clipboard!");
-      });
-    });
-
-    // Layout View Switcher
-    const splitBtn = document.getElementById("view-split-btn");
-    const studioBtn = document.getElementById("view-studio-btn");
-    const theoryBtn = document.getElementById("view-theory-btn");
-    const theoryPanel = document.getElementById("theory-panel");
-    const studioPanel = document.getElementById("studio-panel");
-
-    const updateViewButtons = (activeBtn) => {
-      [splitBtn, studioBtn, theoryBtn].forEach(b => {
-        b.className = "px-2.5 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
-      });
-      activeBtn.className = "px-2.5 py-1 rounded bg-[var(--bg-card)] font-medium shadow-sm text-[var(--text-primary)]";
-    };
-
-    splitBtn?.addEventListener("click", () => {
-      theoryPanel.classList.remove("hidden");
-      studioPanel.classList.remove("hidden");
-      updateViewButtons(splitBtn);
-      this.renderCanvas();
-    });
-
-    studioBtn?.addEventListener("click", () => {
-      theoryPanel.classList.add("hidden");
-      studioPanel.classList.remove("hidden");
-      updateViewButtons(studioBtn);
-      this.renderCanvas();
-    });
-
-    theoryBtn?.addEventListener("click", () => {
-      theoryPanel.classList.remove("hidden");
-      studioPanel.classList.add("hidden");
-      updateViewButtons(theoryBtn);
-    });
-  }
-
-  stepChapter(delta) {
-    let nextId = this.currentChapterId + delta;
-    if (nextId < 1) nextId = 12;
-    if (nextId > 12) nextId = 1;
-    this.loadChapter(nextId);
   }
 
   showToast(msg) {
