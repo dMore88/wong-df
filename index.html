@@ -598,7 +598,12 @@
     <span id="toast-msg">Action completed</span>
   </div>
 
-  <!-- Application Entry Script -->
-  <script type="module" src="js/app.js"></script>
+  <!-- Application Entry Script (Self-contained, works with both http:// and file://) -->
+  <script src="js/bundle.js"></script>
+  <script>
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  </script>
 </body>
 </html>
