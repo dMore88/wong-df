@@ -485,28 +485,141 @@
             </div>
           </div>
 
-          <!-- 4. GRADATION -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Gradation</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Moving between visual states</div>
+          <!-- 4. GRADATION (Chapter 6) -->
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Gradation</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Moving between visual states</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-gradation-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Gradation -->
+            <div id="accordion-gradation" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Gradation Attribute</label>
+                <div class="relative">
+                  <select id="grad-type" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="rotation">Planar Rotation (0°-360°)</option>
+                    <option value="scale">Planar Scale (Crescendo/Diminuendo)</option>
+                    <option value="depth">Spatial Depth Perspective</option>
+                    <option value="drift">Form B Offset Drift</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Pathway Direction</label>
+                <div class="relative">
+                  <select id="grad-pathway" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="diagonal">Diagonal (Corner to Corner)</option>
+                    <option value="horizontal">Horizontal (Left to Right)</option>
+                    <option value="vertical">Vertical (Top to Bottom)</option>
+                    <option value="concentric">Concentric (Center to Edge)</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Range and Cycles -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Span / Range</span>
+                    <span id="val-grad-range" class="font-mono text-accent font-bold">180°</span>
+                  </div>
+                  <input type="range" id="input-grad-range" min="45" max="360" step="15" value="180">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Cycles</span>
+                    <span id="val-grad-cycles" class="font-mono text-accent font-bold">1x</span>
+                  </div>
+                  <input type="range" id="input-grad-cycles" min="1" max="4" step="1" value="1">
+                </div>
+              </div>
+
+              <div class="pt-1">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Reverse Gradient Direction</span>
+                  <input type="checkbox" id="check-grad-reverse">
+                </label>
+              </div>
+            </div>
           </div>
 
-          <!-- 5. RADIATION -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Radiation</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Organising around a central point</div>
+          <!-- 5. RADIATION (Chapter 7) -->
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Radiation</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Organising around a central point</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-radiation-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Radiation -->
+            <div id="accordion-radiation" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Radiation Scheme</label>
+                <div class="relative">
+                  <select id="rad-scheme" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="centrifugal">Fig. 37: Centrifugal (Sunburst Rays)</option>
+                    <option value="concentric">Fig. 39: Concentric Rings (Target Waves)</option>
+                    <option value="spiral">Fig. 41: Centripetal Spiral (Vortex Swirl)</option>
+                    <option value="multi_center">Fig. 42: Dual-Center Moiré Pattern</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Rays & Rings -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Angular Rays</span>
+                    <span id="val-rad-rays" class="font-mono text-accent font-bold">12</span>
+                  </div>
+                  <input type="range" id="input-rad-rays" min="4" max="28" step="1" value="12">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Concentric Rings</span>
+                    <span id="val-rad-rings" class="font-mono text-accent font-bold">5</span>
+                  </div>
+                  <input type="range" id="input-rad-rings" min="2" max="10" step="1" value="5">
+                </div>
+              </div>
+
+              <!-- Spiral Twist -->
+              <div id="rad-twist-box">
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                  <span>Spiral Twist / Swirl</span>
+                  <span id="val-rad-twist" class="font-mono text-accent font-bold">45°</span>
+                </div>
+                <input type="range" id="input-rad-twist" min="-180" max="180" step="5" value="45">
+              </div>
+
+              <!-- Visible Structural Lines -->
+              <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Visible Radial Rays</span>
+                  <input type="checkbox" id="check-rad-show-rays">
+                </label>
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Visible Concentric Rings</span>
+                  <input type="checkbox" id="check-rad-show-rings">
+                </label>
+              </div>
+            </div>
           </div>
 
           <!-- 6. ANOMALY -->

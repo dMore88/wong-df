@@ -1050,8 +1050,25 @@ const defaultStudioState = {
       cellJitter: 0, // 0 to 30
       seed: 42
     },
-    gradation: { enabled: false },
-    radiation: { enabled: false },
+    gradation: {
+      enabled: false,
+      type: "rotation", // rotation, scale, depth, drift
+      pathway: "diagonal", // diagonal, horizontal, vertical, concentric
+      range: 180, // degrees or span
+      steps: 1, // cycles (1 to 4)
+      reverse: false
+    },
+    radiation: {
+      enabled: false,
+      scheme: "centrifugal", // centrifugal, concentric, spiral, multi_center
+      rays: 12, // 4 to 28
+      rings: 5, // 2 to 10
+      spiralTwist: 45, // -180 to 180
+      showRays: false,
+      showRings: false,
+      centerX: 0,
+      centerY: 0
+    },
     anomaly: { enabled: false },
     contrast: { enabled: false },
     concentration: { enabled: false },
@@ -1323,11 +1340,12 @@ class StudioEngine {
     ctx.closePath();
   }
 
-  // Render the repetition / structural grid with similarity kinematics
+  // Render the repetition / structural grid with similarity and gradation kinematics
   renderRepetitionGrid(ctx, width, height, palette) {
     const rep = this.state.modifiers.repetition;
     const struct = this.state.modifiers.structure;
     const sim = this.state.modifiers.similarity;
+    const grad = this.state.modifiers.gradation;
 
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
@@ -1466,6 +1484,40 @@ class StudioEngine {
           ctx.rotate(Math.PI);
         }
 
+        // Gradation kinematics across Cartesian pathways
+        if (grad.enabled) {
+          let t = 0;
+          if (grad.pathway === "horizontal") {
+            t = cols > 1 ? c / (cols - 1) : 0;
+          } else if (grad.pathway === "vertical") {
+            t = rows > 1 ? r / (rows - 1) : 0;
+          } else if (grad.pathway === "diagonal") {
+            t = (cols + rows > 2) ? (c + r) / (cols + rows - 2) : 0;
+          } else if (grad.pathway === "concentric") {
+            const dc = c - (cols - 1) / 2;
+            const dr = r - (rows - 1) / 2;
+            const maxD = Math.sqrt(Math.pow((cols - 1) / 2, 2) + Math.pow((rows - 1) / 2, 2)) || 1;
+            t = Math.sqrt(dc * dc + dr * dr) / maxD;
+          }
+
+          if (grad.reverse) t = 1 - t;
+          t = (t * (grad.steps || 1)) % 1.0001;
+
+          if (grad.type === "rotation") {
+            const rotSpan = ((grad.range ?? 180) * Math.PI) / 180;
+            ctx.rotate(t * rotSpan);
+          } else if (grad.type === "scale") {
+            const sFactor = 0.35 + t * 1.1;
+            ctx.scale(sFactor, sFactor);
+          } else if (grad.type === "depth") {
+            ctx.rotate(Math.PI / 6);
+            ctx.scale(1, Math.max(0.18, 1 - t * 0.82));
+            ctx.rotate(-Math.PI / 6);
+          } else if (grad.type === "drift") {
+            ctx.translate(t * (cW * 0.28), 0);
+          }
+        }
+
         // Similarity: Module Kinship & Fluctuation
         if (sim.enabled) {
           const intensity = (sim.intensity ?? 50) / 100;
@@ -1555,6 +1607,165 @@ class StudioEngine {
     }
   }
 
+  // Render the polar radiation layout (Chapter 7)
+  renderRadiation(ctx, width, height, palette) {
+    const rad = this.state.modifiers.radiation;
+    const grad = this.state.modifiers.gradation;
+    const sim = this.state.modifiers.similarity;
+
+    const margin = 35;
+    const usableW = width - margin * 2;
+    const usableH = height - margin * 2;
+    const maxR = Math.min(usableW, usableH) / 2;
+
+    const cx = width / 2 + (rad.centerX || 0);
+    const cy = height / 2 + (rad.centerY || 0);
+
+    const rays = Math.max(4, rad.rays);
+    const rings = Math.max(2, rad.rings);
+    const twistRad = ((rad.spiralTwist || 0) * Math.PI) / 180;
+
+    // Centers list (if multi_center, we have two focal centers creating Moiré)
+    const centers = rad.scheme === "multi_center"
+      ? [
+          { x: cx - maxR * 0.35, y: cy },
+          { x: cx + maxR * 0.35, y: cy }
+        ]
+      : [{ x: cx, y: cy }];
+
+    // Clip to usable area
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin, margin, usableW, usableH);
+    ctx.clip();
+
+    const seed = sim.seed || 42;
+
+    centers.forEach((center, centerIdx) => {
+      for (let i = 1; i <= rings; i++) {
+        const ringRadius = (i / rings) * maxR;
+
+        for (let j = 0; j < rays; j++) {
+          const baseAngle = (j / rays) * Math.PI * 2;
+          let angle = baseAngle;
+
+          // Spiral twist
+          if (rad.scheme === "spiral") {
+            angle += twistRad * (i / rings);
+          }
+
+          const x = center.x + ringRadius * Math.cos(angle);
+          const y = center.y + ringRadius * Math.sin(angle);
+
+          // Check bounds
+          if (x < margin || x > width - margin || y < margin || y > height - margin) continue;
+
+          ctx.save();
+          ctx.translate(x, y);
+
+          // Base radiation orientation
+          if (rad.scheme === "centrifugal" || rad.scheme === "multi_center") {
+            ctx.rotate(angle + Math.PI / 2);
+          } else if (rad.scheme === "concentric") {
+            ctx.rotate(angle);
+          } else if (rad.scheme === "spiral") {
+            ctx.rotate(angle + Math.PI / 2 + (twistRad * 0.35));
+          }
+
+          // Gradation on polar radiation
+          if (grad.enabled) {
+            let t = (grad.pathway === "concentric" || grad.pathway === "diagonal") 
+              ? (i / rings) 
+              : (j / rays);
+            if (grad.reverse) t = 1 - t;
+            t = (t * (grad.steps || 1)) % 1.0001;
+
+            if (grad.type === "rotation") {
+              ctx.rotate(t * (((grad.range ?? 180) * Math.PI) / 180));
+            } else if (grad.type === "scale") {
+              const sFactor = 0.35 + t * 1.1;
+              ctx.scale(sFactor, sFactor);
+            } else if (grad.type === "depth") {
+              ctx.rotate(0.3);
+              ctx.scale(1, Math.max(0.2, 1 - t * 0.75));
+              ctx.rotate(-0.3);
+            }
+          }
+
+          // Similarity on radiation
+          if (sim.enabled) {
+            const pRand = (salt) => {
+              const val = Math.sin(seed * 997 + (i * 100 + j + centerIdx * 1000) * 31 + salt * 101) * 10000;
+              return (val - Math.floor(val)) * 2 - 1;
+            };
+            const intensity = (sim.intensity ?? 50) / 100;
+            if (sim.kinshipType === "distortion") {
+              ctx.scale(1 + pRand(1) * intensity * 0.5, 1 + pRand(2) * intensity * 0.5);
+            } else if (sim.kinshipType === "foreshortening") {
+              const rRot = pRand(3) * Math.PI;
+              ctx.rotate(rRot);
+              ctx.scale(1, Math.max(0.2, 1 - Math.abs(pRand(4)) * intensity * 0.8));
+              ctx.rotate(-rRot);
+            } else if (sim.kinshipType === "rotation_wobble") {
+              ctx.rotate(pRand(5) * intensity * (Math.PI / 2));
+            } else if (sim.kinshipType === "scale_kinship") {
+              const sFactor = Math.max(0.2, 1 + pRand(6) * intensity * 0.6);
+              ctx.scale(sFactor, sFactor);
+            }
+          }
+
+          // Natural centrifugal growth scale: outer modules larger, inner smaller
+          const growthScale = 0.28 + (i / rings) * 0.42;
+          this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), palette.fg, palette.bg);
+          ctx.restore();
+        }
+      }
+    });
+
+    ctx.restore(); // end outer clip
+
+    // Structural visible guides
+    if (rad.showRings || rad.showRays) {
+      ctx.save();
+      ctx.strokeStyle = palette.grid;
+      ctx.lineWidth = 1;
+
+      centers.forEach(center => {
+        if (rad.showRings) {
+          for (let i = 1; i <= rings; i++) {
+            const r = (i / rings) * maxR;
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        if (rad.showRays) {
+          for (let j = 0; j < rays; j++) {
+            const baseAngle = (j / rays) * Math.PI * 2;
+            ctx.beginPath();
+            if (rad.scheme === "spiral") {
+              ctx.moveTo(center.x, center.y);
+              const steps = 24;
+              for (let s = 1; s <= steps; s++) {
+                const frac = s / steps;
+                const r = frac * maxR;
+                const a = baseAngle + twistRad * frac;
+                ctx.lineTo(center.x + r * Math.cos(a), center.y + r * Math.sin(a));
+              }
+            } else {
+              ctx.moveTo(center.x, center.y);
+              ctx.lineTo(center.x + maxR * Math.cos(baseAngle), center.y + maxR * Math.sin(baseAngle));
+            }
+            ctx.stroke();
+          }
+        }
+      });
+
+      ctx.restore();
+    }
+  }
+
   // Master render method
   render(palette) {
     if (!this.canvas) return;
@@ -1602,13 +1813,29 @@ class StudioEngine {
       ctx.restore();
     }
 
-    // 3. Render Pipeline
-    if (this.state.modifiers.repetition.enabled || this.state.modifiers.structure.enabled) {
+    // 3. Render Pipeline: Radiation takes spatial precedence over Cartesian grid
+    if (this.state.modifiers.radiation.enabled) {
+      this.renderRadiation(ctx, width, height, palette);
+    } else if (this.state.modifiers.repetition.enabled || this.state.modifiers.structure.enabled) {
       this.renderRepetitionGrid(ctx, width, height, palette);
     } else {
       // Single Module Study in Center
       ctx.save();
       ctx.translate(width / 2, height / 2);
+
+      // If gradation is active on single module, apply rotation or depth
+      const grad = this.state.modifiers.gradation;
+      if (grad.enabled) {
+        if (grad.type === "rotation") {
+          ctx.rotate(((grad.range ?? 180) * Math.PI) / 180);
+        } else if (grad.type === "scale") {
+          ctx.scale(1.3, 1.3);
+        } else if (grad.type === "depth") {
+          ctx.rotate(0.35);
+          ctx.scale(1, 0.4);
+          ctx.rotate(-0.35);
+        }
+      }
 
       // If similarity is active on single module, apply kinship transform
       const sim = this.state.modifiers.similarity;
@@ -1635,7 +1862,7 @@ class StudioEngine {
     }
 
     // 4. Subtle center reference dot (when in single module mode)
-    if (!this.state.modifiers.repetition.enabled && !this.state.modifiers.structure.enabled) {
+    if (!this.state.modifiers.repetition.enabled && !this.state.modifiers.structure.enabled && !this.state.modifiers.radiation.enabled) {
       ctx.save();
       ctx.fillStyle = palette.accent;
       ctx.globalAlpha = 0.6;
@@ -4342,6 +4569,127 @@ class WongApp {
       this.showToast("Shuffled Visual Kinship Family");
     });
 
+    // ------------------------------------------------------------
+    // Gradation Modifier (Chapter 6)
+    // ------------------------------------------------------------
+    const gradToggle = document.getElementById("mod-gradation-toggle");
+    const gradAccordion = document.getElementById("accordion-gradation");
+
+    gradToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.gradation.enabled = isChecked;
+      if (isChecked) {
+        gradAccordion?.classList.remove("hidden");
+        this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
+      } else {
+        gradAccordion?.classList.add("hidden");
+        this.showToast("Gradation Modifier Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("grad-type")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.gradation.type = e.target.value;
+      this.renderStudio();
+    });
+
+    document.getElementById("grad-pathway")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.gradation.pathway = e.target.value;
+      this.renderStudio();
+    });
+
+    const gradRange = document.getElementById("input-grad-range");
+    const valGradRange = document.getElementById("val-grad-range");
+    gradRange?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.gradation.range = v;
+      if (valGradRange) valGradRange.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    const gradCycles = document.getElementById("input-grad-cycles");
+    const valGradCycles = document.getElementById("val-grad-cycles");
+    gradCycles?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.gradation.steps = v;
+      if (valGradCycles) valGradCycles.textContent = `${v}x`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-grad-reverse")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.gradation.reverse = e.target.checked;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Radiation Modifier (Chapter 7)
+    // ------------------------------------------------------------
+    const radToggle = document.getElementById("mod-radiation-toggle");
+    const radAccordion = document.getElementById("accordion-radiation");
+
+    radToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.radiation.enabled = isChecked;
+      if (isChecked) {
+        radAccordion?.classList.remove("hidden");
+        this.showToast("Radiation Active: Polar Structural Framework");
+      } else {
+        radAccordion?.classList.add("hidden");
+        this.showToast("Radiation Deactivated: Reverted to Cartesian Grid");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("rad-scheme")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.radiation.scheme = val;
+      const twistBox = document.getElementById("rad-twist-box");
+      if (twistBox) {
+        if (val === "spiral") twistBox.classList.remove("opacity-40");
+        else twistBox.classList.add("opacity-40");
+      }
+      this.renderStudio();
+    });
+
+    const radRays = document.getElementById("input-rad-rays");
+    const valRadRays = document.getElementById("val-rad-rays");
+    radRays?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.radiation.rays = v;
+      if (valRadRays) valRadRays.textContent = `${v} rays`;
+      this.renderStudio();
+    });
+
+    const radRings = document.getElementById("input-rad-rings");
+    const valRadRings = document.getElementById("val-rad-rings");
+    radRings?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.radiation.rings = v;
+      if (valRadRings) valRadRings.textContent = `${v} rings`;
+      this.renderStudio();
+    });
+
+    const radTwist = document.getElementById("input-rad-twist");
+    const valRadTwist = document.getElementById("val-rad-twist");
+    radTwist?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.radiation.spiralTwist = v;
+      if (valRadTwist) valRadTwist.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-rad-show-rays")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.radiation.showRays = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-rad-show-rings")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.radiation.showRings = e.target.checked;
+      this.renderStudio();
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -4466,6 +4814,48 @@ class WongApp {
     setText("val-sim-intensity", `${s.modifiers.similarity.intensity}%`);
     setVal("input-sim-jitter", s.modifiers.similarity.cellJitter);
     setText("val-sim-jitter", `${s.modifiers.similarity.cellJitter}px`);
+
+    // Gradation sync
+    const gradToggle = document.getElementById("mod-gradation-toggle");
+    if (gradToggle) gradToggle.checked = s.modifiers.gradation.enabled;
+    const gradAccordion = document.getElementById("accordion-gradation");
+    if (gradAccordion) {
+      if (s.modifiers.gradation.enabled) gradAccordion.classList.remove("hidden");
+      else gradAccordion.classList.add("hidden");
+    }
+    setVal("grad-type", s.modifiers.gradation.type);
+    setVal("grad-pathway", s.modifiers.gradation.pathway);
+    setVal("input-grad-range", s.modifiers.gradation.range);
+    setText("val-grad-range", `${s.modifiers.gradation.range}°`);
+    setVal("input-grad-cycles", s.modifiers.gradation.steps);
+    setText("val-grad-cycles", `${s.modifiers.gradation.steps}x`);
+    const checkGradRev = document.getElementById("check-grad-reverse");
+    if (checkGradRev) checkGradRev.checked = s.modifiers.gradation.reverse;
+
+    // Radiation sync
+    const radToggle = document.getElementById("mod-radiation-toggle");
+    if (radToggle) radToggle.checked = s.modifiers.radiation.enabled;
+    const radAccordion = document.getElementById("accordion-radiation");
+    if (radAccordion) {
+      if (s.modifiers.radiation.enabled) radAccordion.classList.remove("hidden");
+      else radAccordion.classList.add("hidden");
+    }
+    setVal("rad-scheme", s.modifiers.radiation.scheme);
+    setVal("input-rad-rays", s.modifiers.radiation.rays);
+    setText("val-rad-rays", `${s.modifiers.radiation.rays} rays`);
+    setVal("input-rad-rings", s.modifiers.radiation.rings);
+    setText("val-rad-rings", `${s.modifiers.radiation.rings} rings`);
+    setVal("input-rad-twist", s.modifiers.radiation.spiralTwist);
+    setText("val-rad-twist", `${s.modifiers.radiation.spiralTwist}°`);
+    const checkRadRays = document.getElementById("check-rad-show-rays");
+    if (checkRadRays) checkRadRays.checked = s.modifiers.radiation.showRays;
+    const checkRadRings = document.getElementById("check-rad-show-rings");
+    if (checkRadRings) checkRadRings.checked = s.modifiers.radiation.showRings;
+    const twistBox = document.getElementById("rad-twist-box");
+    if (twistBox) {
+      if (s.modifiers.radiation.scheme === "spiral") twistBox.classList.remove("opacity-40");
+      else twistBox.classList.add("opacity-40");
+    }
 
     this.initStudioShapePickers();
     this.updateStudioColophon();
@@ -4690,4 +5080,9 @@ window.addEventListener("DOMContentLoaded", () => {
   window.app = new WongApp();
 });
 
+
+  if (typeof window !== 'undefined') {
+    window.StudioEngine = StudioEngine;
+    window.WongApp = WongApp;
+  }
 })();

@@ -61,6 +61,11 @@ def build():
   {''.join(chapters_code)}
 
   {c_app}
+
+  if (typeof window !== 'undefined') {{
+    window.StudioEngine = StudioEngine;
+    window.WongApp = WongApp;
+  }}
 }})();
 """
 

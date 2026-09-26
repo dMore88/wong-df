@@ -500,6 +500,127 @@ class WongApp {
       this.showToast("Shuffled Visual Kinship Family");
     });
 
+    // ------------------------------------------------------------
+    // Gradation Modifier (Chapter 6)
+    // ------------------------------------------------------------
+    const gradToggle = document.getElementById("mod-gradation-toggle");
+    const gradAccordion = document.getElementById("accordion-gradation");
+
+    gradToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.gradation.enabled = isChecked;
+      if (isChecked) {
+        gradAccordion?.classList.remove("hidden");
+        this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
+      } else {
+        gradAccordion?.classList.add("hidden");
+        this.showToast("Gradation Modifier Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("grad-type")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.gradation.type = e.target.value;
+      this.renderStudio();
+    });
+
+    document.getElementById("grad-pathway")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.gradation.pathway = e.target.value;
+      this.renderStudio();
+    });
+
+    const gradRange = document.getElementById("input-grad-range");
+    const valGradRange = document.getElementById("val-grad-range");
+    gradRange?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.gradation.range = v;
+      if (valGradRange) valGradRange.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    const gradCycles = document.getElementById("input-grad-cycles");
+    const valGradCycles = document.getElementById("val-grad-cycles");
+    gradCycles?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.gradation.steps = v;
+      if (valGradCycles) valGradCycles.textContent = `${v}x`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-grad-reverse")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.gradation.reverse = e.target.checked;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Radiation Modifier (Chapter 7)
+    // ------------------------------------------------------------
+    const radToggle = document.getElementById("mod-radiation-toggle");
+    const radAccordion = document.getElementById("accordion-radiation");
+
+    radToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.radiation.enabled = isChecked;
+      if (isChecked) {
+        radAccordion?.classList.remove("hidden");
+        this.showToast("Radiation Active: Polar Structural Framework");
+      } else {
+        radAccordion?.classList.add("hidden");
+        this.showToast("Radiation Deactivated: Reverted to Cartesian Grid");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("rad-scheme")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.radiation.scheme = val;
+      const twistBox = document.getElementById("rad-twist-box");
+      if (twistBox) {
+        if (val === "spiral") twistBox.classList.remove("opacity-40");
+        else twistBox.classList.add("opacity-40");
+      }
+      this.renderStudio();
+    });
+
+    const radRays = document.getElementById("input-rad-rays");
+    const valRadRays = document.getElementById("val-rad-rays");
+    radRays?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.radiation.rays = v;
+      if (valRadRays) valRadRays.textContent = `${v} rays`;
+      this.renderStudio();
+    });
+
+    const radRings = document.getElementById("input-rad-rings");
+    const valRadRings = document.getElementById("val-rad-rings");
+    radRings?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.radiation.rings = v;
+      if (valRadRings) valRadRings.textContent = `${v} rings`;
+      this.renderStudio();
+    });
+
+    const radTwist = document.getElementById("input-rad-twist");
+    const valRadTwist = document.getElementById("val-rad-twist");
+    radTwist?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.radiation.spiralTwist = v;
+      if (valRadTwist) valRadTwist.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-rad-show-rays")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.radiation.showRays = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-rad-show-rings")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.radiation.showRings = e.target.checked;
+      this.renderStudio();
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -624,6 +745,48 @@ class WongApp {
     setText("val-sim-intensity", `${s.modifiers.similarity.intensity}%`);
     setVal("input-sim-jitter", s.modifiers.similarity.cellJitter);
     setText("val-sim-jitter", `${s.modifiers.similarity.cellJitter}px`);
+
+    // Gradation sync
+    const gradToggle = document.getElementById("mod-gradation-toggle");
+    if (gradToggle) gradToggle.checked = s.modifiers.gradation.enabled;
+    const gradAccordion = document.getElementById("accordion-gradation");
+    if (gradAccordion) {
+      if (s.modifiers.gradation.enabled) gradAccordion.classList.remove("hidden");
+      else gradAccordion.classList.add("hidden");
+    }
+    setVal("grad-type", s.modifiers.gradation.type);
+    setVal("grad-pathway", s.modifiers.gradation.pathway);
+    setVal("input-grad-range", s.modifiers.gradation.range);
+    setText("val-grad-range", `${s.modifiers.gradation.range}°`);
+    setVal("input-grad-cycles", s.modifiers.gradation.steps);
+    setText("val-grad-cycles", `${s.modifiers.gradation.steps}x`);
+    const checkGradRev = document.getElementById("check-grad-reverse");
+    if (checkGradRev) checkGradRev.checked = s.modifiers.gradation.reverse;
+
+    // Radiation sync
+    const radToggle = document.getElementById("mod-radiation-toggle");
+    if (radToggle) radToggle.checked = s.modifiers.radiation.enabled;
+    const radAccordion = document.getElementById("accordion-radiation");
+    if (radAccordion) {
+      if (s.modifiers.radiation.enabled) radAccordion.classList.remove("hidden");
+      else radAccordion.classList.add("hidden");
+    }
+    setVal("rad-scheme", s.modifiers.radiation.scheme);
+    setVal("input-rad-rays", s.modifiers.radiation.rays);
+    setText("val-rad-rays", `${s.modifiers.radiation.rays} rays`);
+    setVal("input-rad-rings", s.modifiers.radiation.rings);
+    setText("val-rad-rings", `${s.modifiers.radiation.rings} rings`);
+    setVal("input-rad-twist", s.modifiers.radiation.spiralTwist);
+    setText("val-rad-twist", `${s.modifiers.radiation.spiralTwist}°`);
+    const checkRadRays = document.getElementById("check-rad-show-rays");
+    if (checkRadRays) checkRadRays.checked = s.modifiers.radiation.showRays;
+    const checkRadRings = document.getElementById("check-rad-show-rings");
+    if (checkRadRings) checkRadRings.checked = s.modifiers.radiation.showRings;
+    const twistBox = document.getElementById("rad-twist-box");
+    if (twistBox) {
+      if (s.modifiers.radiation.scheme === "spiral") twistBox.classList.remove("opacity-40");
+      else twistBox.classList.add("opacity-40");
+    }
 
     this.initStudioShapePickers();
     this.updateStudioColophon();
