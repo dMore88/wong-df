@@ -114,14 +114,25 @@ export class StudioEngine {
   // Get active principles list for the editorial colophon
   getActivePrinciples() {
     const list = ["FORM"];
-    if (this.state.modifiers.repetition.enabled) list.push("REPETITION");
-    if (this.state.modifiers.structure.enabled) list.push("STRUCTURE");
-    if (this.state.modifiers.similarity.enabled) list.push("SIMILARITY");
-    if (this.state.modifiers.gradation.enabled) list.push("GRADATION");
-    if (this.state.modifiers.radiation.enabled) list.push("RADIATION");
-    if (this.state.modifiers.anomaly.enabled) list.push("ANOMALY");
-    if (this.state.modifiers.contrast.enabled) list.push("CONTRAST");
-    if (this.state.modifiers.concentration.enabled) list.push("CONCENTRATION");
+    const hasRep = this.state.modifiers.repetition.enabled;
+    const hasRad = this.state.modifiers.radiation.enabled;
+    const hasGrid = hasRep || hasRad;
+
+    if (hasRad) {
+      list.push("RADIATION");
+    } else if (hasRep) {
+      list.push("REPETITION");
+      if (this.state.modifiers.structure.enabled) list.push("STRUCTURE");
+    }
+
+    if (hasGrid) {
+      if (this.state.modifiers.similarity.enabled) list.push("SIMILARITY");
+      if (this.state.modifiers.gradation.enabled) list.push("GRADATION");
+      if (this.state.modifiers.anomaly.enabled) list.push("ANOMALY");
+      if (this.state.modifiers.contrast.enabled) list.push("CONTRAST");
+    }
+
+    if (this.state.modifiers.concentration.enabled && hasGrid) list.push("CONCENTRATION");
     if (this.state.modifiers.texture.enabled) list.push("TEXTURE");
     if (this.state.modifiers.space.enabled) list.push("SPACE");
     return list;
@@ -1057,88 +1068,13 @@ export class StudioEngine {
     // 3. Render Pipeline: Radiation takes spatial precedence over Cartesian grid
     if (this.state.modifiers.radiation.enabled) {
       this.renderRadiation(ctx, width, height, palette);
-    } else if (this.state.modifiers.repetition.enabled || this.state.modifiers.structure.enabled) {
+    } else if (this.state.modifiers.repetition.enabled) {
       this.renderRepetitionGrid(ctx, width, height, palette);
     } else {
-      // Single Module Study in Center
+      // Single Module Study in Center (Pure Form A & Form B Base Unit)
       ctx.save();
       ctx.translate(width / 2, height / 2);
-
-      let modFg = fgColor;
-      let shapeOverrideA = null;
-      let wireframeOverride = null;
-
-      // If gradation is active on single module, apply rotation or depth
-      const grad = this.state.modifiers.gradation;
-      if (grad.enabled) {
-        if (grad.type === "rotation") {
-          ctx.rotate(((grad.range ?? 180) * Math.PI) / 180);
-        } else if (grad.type === "scale") {
-          ctx.scale(1.3, 1.3);
-        } else if (grad.type === "depth") {
-          ctx.rotate(0.35);
-          ctx.scale(1, 0.4);
-          ctx.rotate(-0.35);
-        }
-      }
-
-      // If similarity is active on single module, apply kinship transform
-      const sim = this.state.modifiers.similarity;
-      if (sim.enabled) {
-        const intensity = (sim.intensity ?? 50) / 100;
-        if (sim.kinshipType === "distortion") {
-          ctx.scale(1 + intensity * 0.45, 1 - intensity * 0.25);
-        } else if (sim.kinshipType === "foreshortening") {
-          ctx.rotate(0.35);
-          ctx.scale(1, Math.max(0.2, 1 - intensity * 0.75));
-          ctx.rotate(-0.35);
-        } else if (sim.kinshipType === "rotation_wobble") {
-          ctx.rotate(intensity * 0.6);
-        } else if (sim.kinshipType === "scale_kinship") {
-          ctx.scale(1 + intensity * 0.4, 1 + intensity * 0.4);
-        } else if (sim.kinshipType === "hybrid") {
-          ctx.rotate(intensity * 0.25);
-          ctx.scale(1 + intensity * 0.25, 1 - intensity * 0.15);
-        }
-      }
-
-      // If anomaly is active on single module
-      const anom = this.state.modifiers.anomaly;
-      if (anom.enabled) {
-        if (anom.type === "focal") {
-          shapeOverrideA = anom.anomalousShape || "triangle_eq";
-          if (anom.highlightColor) modFg = palette.accent;
-          ctx.rotate(0.35);
-        } else if (anom.type === "fracture") {
-          ctx.rotate(0.45);
-          ctx.scale(1.25, 0.75);
-          if (anom.highlightColor) modFg = palette.accent;
-        } else if (anom.type === "swell") {
-          ctx.scale(1.4, 1.4);
-        } else if (anom.type === "tear") {
-          ctx.scale(0.55, 0.55);
-          ctx.rotate(0.6);
-          if (anom.highlightColor) modFg = palette.accent;
-        }
-      }
-
-      // If contrast is active on single module
-      const contrast = this.state.modifiers.contrast;
-      if (contrast.enabled) {
-        if (contrast.dimension === "shape") {
-          shapeOverrideA = contrast.contrastShape || "star4";
-        } else if (contrast.dimension === "scale") {
-          const s = contrast.scaleFactor ?? 2.2;
-          ctx.scale(s, s);
-        } else if (contrast.dimension === "direction") {
-          ctx.rotate(((contrast.angle ?? 45) * Math.PI) / 180);
-        } else if (contrast.dimension === "tone") {
-          wireframeOverride = true;
-        }
-        if (contrast.highlightContrast) modFg = palette.accent;
-      }
-
-      this.renderModule(ctx, 1.25, modFg, bgColor, null, null, shapeOverrideA, wireframeOverride);
+      this.renderModule(ctx, 1.25, fgColor, bgColor);
       ctx.restore();
     }
 

@@ -328,11 +328,16 @@ class WongApp {
       this.studioEngine.state.modifiers.repetition.enabled = isChecked;
       if (isChecked) {
         repAccordion?.classList.remove("hidden");
-        this.showToast("Repetition Modifier Activated");
+        if (this.studioEngine.state.modifiers.radiation.enabled) {
+          this.showToast("Repetition activada: Ten en cuenta que Radiation está rigiendo en coordenadas polares. Desactiva Radiation para ver la retícula ortogonal.", 4500);
+        } else {
+          this.showToast("Repetition Modifier Activated (Cartesian Matrix)");
+        }
       } else {
         repAccordion?.classList.add("hidden");
         this.showToast("Repetition Modifier Deactivated");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -390,20 +395,20 @@ class WongApp {
       this.studioEngine.state.modifiers.structure.enabled = isChecked;
       if (isChecked) {
         structAccordion?.classList.remove("hidden");
-        // If repetition wasn't active, activate it as well to establish the grid
-        if (!this.studioEngine.state.modifiers.repetition.enabled) {
-          const repT = document.getElementById("mod-repetition-toggle");
-          if (repT) {
-            repT.checked = true;
-            this.studioEngine.state.modifiers.repetition.enabled = true;
-            document.getElementById("accordion-repetition")?.classList.remove("hidden");
-          }
+        const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
+        const hasRad = this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasRep) {
+          this.showToast("Structure modula los intervalos de la retícula. Activa 'Repetition' para visualizar su efecto sobre el diseño.", 4200);
+        } else if (hasRad) {
+          this.showToast("Structure rige sobre la retícula ortogonal (Repetition). En el modo polar actual prevalece Radiation.", 4200);
+        } else {
+          this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
         }
-        this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
       } else {
         structAccordion?.classList.add("hidden");
         this.showToast("Structure Modifier Deactivated");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -462,11 +467,17 @@ class WongApp {
       this.studioEngine.state.modifiers.similarity.enabled = isChecked;
       if (isChecked) {
         simAccordion?.classList.remove("hidden");
-        this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
+        const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasGrid) {
+          this.showToast("Similarity opera sobre familias de módulos. Activa 'Repetition' o 'Radiation' para apreciar las variaciones de parentesco.", 4200);
+        } else {
+          this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
+        }
       } else {
         simAccordion?.classList.add("hidden");
         this.showToast("Similarity Modifier Deactivated");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -511,11 +522,17 @@ class WongApp {
       this.studioEngine.state.modifiers.gradation.enabled = isChecked;
       if (isChecked) {
         gradAccordion?.classList.remove("hidden");
-        this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
+        const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasGrid) {
+          this.showToast("Gradation requiere una secuencia de pasos. Activa 'Repetition' o 'Radiation' para ver la progresión en el canvas.", 4200);
+        } else {
+          this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
+        }
       } else {
         gradAccordion?.classList.add("hidden");
         this.showToast("Gradation Modifier Deactivated");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -564,11 +581,16 @@ class WongApp {
       this.studioEngine.state.modifiers.radiation.enabled = isChecked;
       if (isChecked) {
         radAccordion?.classList.remove("hidden");
-        this.showToast("Radiation Active: Polar Structural Framework");
+        if (this.studioEngine.state.modifiers.repetition.enabled) {
+          this.showToast("Radiation activada: la estructura polar prevalece sobre la retícula ortogonal de Repetition.", 4500);
+        } else {
+          this.showToast("Radiation Active: Polar Structural Framework");
+        }
       } else {
         radAccordion?.classList.add("hidden");
         this.showToast("Radiation Deactivated: Reverted to Cartesian Grid");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -632,11 +654,17 @@ class WongApp {
       this.studioEngine.state.modifiers.anomaly.enabled = isChecked;
       if (isChecked) {
         anomAccordion?.classList.remove("hidden");
-        this.showToast("Anomaly Active: Irregularity Focal Tension");
+        const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasGrid) {
+          this.showToast("Anomaly rompe una regularidad previa. Activa 'Repetition' o 'Radiation' para generar el campo regular donde actúa el epicentro.", 4500);
+        } else {
+          this.showToast("Anomaly Active: Irregularity Focal Tension");
+        }
       } else {
         anomAccordion?.classList.add("hidden");
         this.showToast("Anomaly Deactivated: Regularity Restored");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -733,11 +761,17 @@ class WongApp {
       this.studioEngine.state.modifiers.contrast.enabled = isChecked;
       if (isChecked) {
         contrastAccordion?.classList.remove("hidden");
-        this.showToast("Contrast Active: Visual Disparity & Dominance");
+        const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasGrid) {
+          this.showToast("Contrast distribuye dominancia (mayoría vs. minoría). Activa 'Repetition' o 'Radiation' para manifestarse sobre la composición.", 4500);
+        } else {
+          this.showToast("Contrast Active: Visual Disparity & Dominance");
+        }
       } else {
         contrastAccordion?.classList.add("hidden");
         this.showToast("Contrast Deactivated");
       }
+      this.updateModifierDependencyWarnings();
       this.updateStudioColophon();
       this.renderStudio();
     });
@@ -1016,7 +1050,62 @@ class WongApp {
     if (checkContrastHl) checkContrastHl.checked = s.modifiers.contrast.highlightContrast;
 
     this.initStudioShapePickers();
+    this.updateModifierDependencyWarnings();
     this.updateStudioColophon();
+  }
+
+  updateModifierDependencyWarnings() {
+    const s = this.studioEngine.state;
+    const hasRep = s.modifiers.repetition.enabled;
+    const hasRad = s.modifiers.radiation.enabled;
+    const hasGrid = hasRep || hasRad;
+
+    const warnStruct = document.getElementById("dep-warning-structure");
+    if (warnStruct) {
+      if (!hasRep) {
+        warnStruct.classList.remove("hidden");
+      } else {
+        warnStruct.classList.add("hidden");
+      }
+    }
+
+    const warnSim = document.getElementById("dep-warning-similarity");
+    if (warnSim) {
+      if (!hasGrid) {
+        warnSim.classList.remove("hidden");
+      } else {
+        warnSim.classList.add("hidden");
+      }
+    }
+
+    const warnGrad = document.getElementById("dep-warning-gradation");
+    if (warnGrad) {
+      if (!hasGrid) {
+        warnGrad.classList.remove("hidden");
+      } else {
+        warnGrad.classList.add("hidden");
+      }
+    }
+
+    const warnAnom = document.getElementById("dep-warning-anomaly");
+    if (warnAnom) {
+      if (!hasGrid) {
+        warnAnom.classList.remove("hidden");
+      } else {
+        warnAnom.classList.add("hidden");
+      }
+    }
+
+    const warnContrast = document.getElementById("dep-warning-contrast");
+    if (warnContrast) {
+      if (!hasGrid) {
+        warnContrast.classList.remove("hidden");
+      } else {
+        warnContrast.classList.add("hidden");
+      }
+    }
+
+    if (window.lucide) window.lucide.createIcons();
   }
 
   updateStudioColophon() {
@@ -1216,7 +1305,7 @@ class WongApp {
     });
   }
 
-  showToast(msg) {
+  showToast(msg, duration = 2800) {
     const toast = document.getElementById("toast");
     const toastMsg = document.getElementById("toast-msg");
     if (!toast || !toastMsg) return;
@@ -1229,7 +1318,7 @@ class WongApp {
     this.toastTimeout = setTimeout(() => {
       toast.classList.remove("opacity-100");
       toast.classList.add("opacity-0");
-    }, 2400);
+    }, duration);
   }
 }
 
