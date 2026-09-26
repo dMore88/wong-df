@@ -993,6 +993,11 @@ class WongApp {
       this.renderStudio();
     });
 
+    document.getElementById("text-target")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.texture.target = e.target.value;
+      this.renderStudio();
+    });
+
     document.getElementById("text-mode")?.addEventListener("change", (e) => {
       this.studioEngine.state.modifiers.texture.mode = e.target.value;
       this.renderStudio();
@@ -1286,6 +1291,7 @@ class WongApp {
       if (s.modifiers.texture.enabled) textAccordion.classList.remove("hidden");
       else textAccordion.classList.add("hidden");
     }
+    setVal("text-target", s.modifiers.texture.target || "shapes");
     setVal("text-mode", s.modifiers.texture.mode);
     setVal("input-text-density", s.modifiers.texture.density);
     setText("val-text-density", `${s.modifiers.texture.density}%`);

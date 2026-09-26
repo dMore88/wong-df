@@ -109,6 +109,7 @@ export const defaultStudioState = {
     },
     texture: {
       enabled: false,
+      target: "shapes", // shapes, both, canvas
       mode: "grain", // grain, halftone, ribbing, typography
       density: 50, // 20 to 90
       scale: 14, // 6 to 36
@@ -159,8 +160,8 @@ export class StudioEngine {
     return `USED ON THIS DESIGN: ${this.getActivePrinciples().join(" / ")}`;
   }
 
-  // Draw a single shape helper
-  drawShape(ctx, shapeId, size, fgColor, strokeOnly = false, lineWidth = 2) {
+  // Draw a single shape helper with in-figure texture support
+  drawShape(ctx, shapeId, size, fgColor, strokeOnly = false, lineWidth = 2, bgColor = null) {
     const shapeDef = Shapes[shapeId] || Shapes.circle;
     ctx.save();
     shapeDef.draw(ctx, size);
@@ -172,7 +173,97 @@ export class StudioEngine {
     } else {
       ctx.fillStyle = fgColor;
       ctx.fill();
+
+      // In-shape tactile texture (Chapter 11)
+      const text = this.state.modifiers.texture;
+      if (text && text.enabled && (text.target === "shapes" || text.target === "both")) {
+        ctx.save();
+        shapeDef.draw(ctx, size);
+        ctx.clip();
+        const etchColor = bgColor || (this.state.invertFigureGround ? "#111111" : "#FAFAFA");
+        this.fillShapeTexture(ctx, size, fgColor, etchColor, text);
+        ctx.restore();
+      }
     }
+    ctx.restore();
+  }
+
+  // Draw tactile texture strictly within the clipped silhouette of a shape (Chapter 11)
+  fillShapeTexture(ctx, size, fgColor, etchColor, text) {
+    const alpha = (text.contrast ?? 40) / 100;
+    const density = (text.density ?? 50) / 100;
+    const scale = text.scale ?? 14;
+
+    ctx.save();
+
+    if (text.mode === "grain") {
+      // Lithographic tooth / stipple grain carved into the shape
+      ctx.fillStyle = etchColor;
+      ctx.globalAlpha = Math.min(0.85, alpha * 1.1);
+      const dotSize = Math.max(1, scale * 0.12);
+      const count = Math.floor(size * size * 0.08 * (0.5 + density));
+      let s = 98765;
+      const rng = () => {
+        s = (s * 1664525 + 1013904223) % 4294967296;
+        return (s / 4294967296) * 2 - 1; // -1 to 1
+      };
+      for (let i = 0; i < count; i++) {
+        const gx = rng() * size;
+        const gy = rng() * size;
+        ctx.fillRect(gx, gy, dotSize, dotSize);
+      }
+    } else if (text.mode === "halftone") {
+      // Mechanical dot screen eroding the shape into a dot raster (Fig. 67c)
+      ctx.fillStyle = etchColor;
+      ctx.globalAlpha = Math.min(0.9, alpha * 1.25);
+      const step = Math.max(4, Math.round(18 - density * 10));
+      const maxDot = (step * 0.42) * (scale / 14);
+      for (let y = -size; y <= size; y += step) {
+        for (let x = -size; x <= size; x += step) {
+          const dist = Math.hypot(x, y);
+          const factor = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(dist * 0.08));
+          const r = Math.max(0.6, maxDot * factor);
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (text.mode === "ribbing") {
+      // Parallel linear ribbing / hatching carved across the shape (Fig. 68a)
+      ctx.strokeStyle = etchColor;
+      ctx.lineWidth = Math.max(1, scale * 0.09);
+      ctx.globalAlpha = Math.min(0.9, alpha * 1.2);
+      const step = Math.max(3, Math.round(15 - density * 9));
+      ctx.beginPath();
+      for (let y = -size; y <= size; y += step) {
+        ctx.moveTo(-size, y);
+        ctx.lineTo(size, y);
+      }
+      ctx.stroke();
+    } else if (text.mode === "typography") {
+      // Typographic glyphs stamped inside the shape (Fig. 71)
+      const letters = ["A", "B", "R", "X", "M", "Q", "S", "8", "■", "┼", "╱", "╲"];
+      const step = Math.max(10, Math.round(24 - density * 12));
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `bold ${Math.round(scale * 0.85)}px "Space Grotesk", monospace, sans-serif`;
+      ctx.fillStyle = etchColor;
+      ctx.globalAlpha = Math.min(0.85, alpha * 1.15);
+
+      for (let y = -size + step / 2; y <= size; y += step) {
+        for (let x = -size + step / 2; x <= size; x += step) {
+          const hash = Math.sin(y * 31.7 + x * 73.1) * 43758.5453;
+          const rand = hash - Math.floor(hash);
+          const char = letters[Math.floor(rand * letters.length)];
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((rand - 0.5) * 0.5);
+          ctx.fillText(char, 0, 0);
+          ctx.restore();
+        }
+      }
+    }
+
     ctx.restore();
   }
 
@@ -192,7 +283,7 @@ export class StudioEngine {
       ctx.save();
       ctx.translate(ax, ay);
       ctx.rotate((formA.rotation * Math.PI) / 180);
-      this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
+      this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor);
       ctx.restore();
       return;
     }
@@ -222,7 +313,7 @@ export class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor);
         ctx.restore();
 
         // Draw Form B (if overlapping, add fine outline separation for clarity)
@@ -233,11 +324,11 @@ export class StudioEngine {
         if (!wireframe && interrelation === "overlapping") {
           // Clean border cut around Form B to clearly distinguish layering
           ctx.save();
-          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3);
+          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor);
           ctx.restore();
         }
 
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe);
+        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor);
         ctx.restore();
         break;
       }
@@ -247,13 +338,13 @@ export class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor);
         ctx.restore();
 
         ctx.save();
         ctx.translate(ox, oy);
         ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe);
+        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor);
         ctx.restore();
         break;
       }
@@ -1353,10 +1444,12 @@ export class StudioEngine {
     ctx.restore();
   }
 
-  // Tactile Texture Engine (Chapter 11)
+  // Tactile Texture Engine (Chapter 11) - Canvas-wide surface plate
   renderTexture(ctx, width, height, palette) {
     const text = this.state.modifiers.texture;
     if (!text || !text.enabled) return;
+    // Only apply canvas overlay if target is "canvas" or "both"
+    if (text.target === "shapes") return;
 
     ctx.save();
     const fgColor = this.state.invertFigureGround ? palette.bg : palette.fg;

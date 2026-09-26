@@ -960,6 +960,18 @@
             <!-- Accordion Controls for Texture -->
             <div id="accordion-texture" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
               <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Texture Target</label>
+                <div class="relative">
+                  <select id="text-target" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="shapes">Module Figures (Shapes Only)</option>
+                    <option value="both">Figures & Canvas Surface</option>
+                    <option value="canvas">Entire Canvas Ground</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <div>
                 <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Texture Category</label>
                 <div class="relative">
                   <select id="text-mode" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
