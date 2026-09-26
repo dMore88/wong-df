@@ -210,6 +210,18 @@
                 <span id="val-form-a-rotation" class="font-mono text-[var(--text-secondary)]">0°</span>
               </div>
               <input type="range" id="input-form-a-rotation" min="0" max="360" step="5" value="0">
+
+              <div class="flex items-center justify-between pt-1">
+                <label class="text-[11px] text-[var(--text-secondary)]">Offset X</label>
+                <span id="val-form-a-offset-x" class="font-mono text-[var(--text-secondary)]">0px</span>
+              </div>
+              <input type="range" id="input-form-a-offset-x" min="-180" max="180" step="2" value="0">
+
+              <div class="flex items-center justify-between pt-1">
+                <label class="text-[11px] text-[var(--text-secondary)]">Offset Y</label>
+                <span id="val-form-a-offset-y" class="font-mono text-[var(--text-secondary)]">0px</span>
+              </div>
+              <input type="range" id="input-form-a-offset-y" min="-180" max="180" step="2" value="0">
             </div>
           </div>
 
@@ -221,9 +233,9 @@
                 <span id="form-b-status-badge" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Active</span>
               </div>
               
-              <!-- Toggle / Clear Form B -->
-              <button id="toggle-form-b-btn" class="p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-accent transition-colors" title="Toggle Form B on/off">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <!-- Toggle / Clear Form B (+ to activate, - to deactivate) -->
+              <button id="toggle-form-b-btn" class="p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-accent transition-colors" title="Deactivate Form B">
+                <i data-lucide="minus" class="w-3.5 h-3.5"></i>
               </button>
             </div>
 

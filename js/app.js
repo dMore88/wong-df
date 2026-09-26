@@ -222,6 +222,26 @@ class WongApp {
       this.renderStudio();
     });
 
+    // Form A Offsets
+    const offXA = document.getElementById("input-form-a-offset-x");
+    const offYA = document.getElementById("input-form-a-offset-y");
+    const valOffXA = document.getElementById("val-form-a-offset-x");
+    const valOffYA = document.getElementById("val-form-a-offset-y");
+
+    offXA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formA.offsetX = v;
+      if (valOffXA) valOffXA.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    offYA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formA.offsetY = v;
+      if (valOffYA) valOffYA.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
     // Form B Scale, Rotation, Offsets
     const scaleB = document.getElementById("input-form-b-scale");
     const rotB = document.getElementById("input-form-b-rotation");
@@ -260,7 +280,7 @@ class WongApp {
       this.renderStudio();
     });
 
-    // Toggle Form B Enabled/Disabled
+    // Toggle Form B Enabled/Disabled (+ to add, - to remove)
     const toggleFormBBtn = document.getElementById("toggle-form-b-btn");
     const formBStatusBadge = document.getElementById("form-b-status-badge");
     const formBControls = document.getElementById("form-b-controls");
@@ -276,14 +296,19 @@ class WongApp {
         formBStatusBadge.className = "text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
         formBControls.classList.remove("opacity-40", "pointer-events-none");
         formBPicker.classList.remove("opacity-40", "pointer-events-none");
+        toggleFormBBtn.innerHTML = `<i data-lucide="minus" class="w-3.5 h-3.5"></i>`;
+        toggleFormBBtn.title = "Deactivate Form B";
         this.showToast("Form B Activated");
       } else {
         formBStatusBadge.textContent = "Inactive";
         formBStatusBadge.className = "text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-muted)]";
         formBControls.classList.add("opacity-40", "pointer-events-none");
         formBPicker.classList.add("opacity-40", "pointer-events-none");
+        toggleFormBBtn.innerHTML = `<i data-lucide="plus" class="w-3.5 h-3.5"></i>`;
+        toggleFormBBtn.title = "Activate Form B";
         this.showToast("Form B Disabled (Single Form Mode)");
       }
+      if (window.lucide) window.lucide.createIcons();
       this.renderStudio();
     });
 
@@ -396,6 +421,10 @@ class WongApp {
     setText("val-form-a-scale", s.formA.scale);
     setVal("input-form-a-rotation", s.formA.rotation);
     setText("val-form-a-rotation", `${s.formA.rotation}°`);
+    setVal("input-form-a-offset-x", s.formA.offsetX || 0);
+    setText("val-form-a-offset-x", `${s.formA.offsetX || 0}px`);
+    setVal("input-form-a-offset-y", s.formA.offsetY || 0);
+    setText("val-form-a-offset-y", `${s.formA.offsetY || 0}px`);
 
     setVal("input-form-b-scale", s.formB.scale);
     setText("val-form-b-scale", s.formB.scale);
@@ -405,6 +434,14 @@ class WongApp {
     setText("val-form-b-offset-x", `${s.formB.offsetX}px`);
     setVal("input-form-b-offset-y", s.formB.offsetY);
     setText("val-form-b-offset-y", `${s.formB.offsetY}px`);
+
+    const toggleFormBBtn = document.getElementById("toggle-form-b-btn");
+    if (toggleFormBBtn) {
+      toggleFormBBtn.innerHTML = s.formB.enabled
+        ? `<i data-lucide="minus" class="w-3.5 h-3.5"></i>`
+        : `<i data-lucide="plus" class="w-3.5 h-3.5"></i>`;
+      toggleFormBBtn.title = s.formB.enabled ? "Deactivate Form B" : "Activate Form B";
+    }
 
     setVal("interrelation-select", s.interrelation);
 

@@ -1001,7 +1001,9 @@ const defaultStudioState = {
   formA: {
     shape: "circle",
     scale: 110,
-    rotation: 0
+    rotation: 0,
+    offsetX: 0,
+    offsetY: 0
   },
   // Secondary Module Form B
   formB: {
@@ -1098,9 +1100,13 @@ class StudioEngine {
     const rA = (customScaleA ?? formA.scale) * sizeMultiplier;
     const rB = (customScaleB ?? formB.scale) * sizeMultiplier;
 
+    const ax = (formA.offsetX || 0) * sizeMultiplier;
+    const ay = (formA.offsetY || 0) * sizeMultiplier;
+
     // If Form B is disabled, render just Form A
     if (!formB.enabled) {
       ctx.save();
+      ctx.translate(ax, ay);
       ctx.rotate((formA.rotation * Math.PI) / 180);
       this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
       ctx.restore();
@@ -1117,8 +1123,8 @@ class StudioEngine {
       ox = Math.cos(angle) * touchDist;
       oy = Math.sin(angle) * touchDist;
     } else if (interrelation === "coincidence") {
-      ox = 0;
-      oy = 0;
+      ox = ax;
+      oy = ay;
     }
 
     ctx.save();
@@ -1130,6 +1136,7 @@ class StudioEngine {
       case "overlapping": {
         // Draw Form A
         ctx.save();
+        ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
         this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
         ctx.restore();
@@ -1154,6 +1161,7 @@ class StudioEngine {
       case "union": {
         // Unified single silhouette
         ctx.save();
+        ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
         this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
         ctx.restore();
@@ -1168,7 +1176,7 @@ class StudioEngine {
 
       case "subtraction": {
         // Offscreen canvas technique to cut B out of A
-        const pad = Math.max(rA, rB) * 3;
+        const pad = Math.max(rA, rB, Math.abs(ax), Math.abs(ay), Math.abs(ox), Math.abs(oy)) * 4 + 100;
         const offCanvas = document.createElement("canvas");
         offCanvas.width = pad;
         offCanvas.height = pad;
@@ -1177,7 +1185,7 @@ class StudioEngine {
         const cy = pad / 2;
 
         offCtx.save();
-        offCtx.translate(cx, cy);
+        offCtx.translate(cx + ax, cy + ay);
         offCtx.rotate((formA.rotation * Math.PI) / 180);
         this.drawShape(offCtx, formA.shape, rA, fgColor, wireframe);
         offCtx.restore();
@@ -1195,7 +1203,7 @@ class StudioEngine {
 
       case "intersection": {
         // Offscreen canvas technique: keep only overlap
-        const pad = Math.max(rA, rB) * 3;
+        const pad = Math.max(rA, rB, Math.abs(ax), Math.abs(ay), Math.abs(ox), Math.abs(oy)) * 4 + 100;
         const offCanvas = document.createElement("canvas");
         offCanvas.width = pad;
         offCanvas.height = pad;
@@ -1204,7 +1212,7 @@ class StudioEngine {
         const cy = pad / 2;
 
         offCtx.save();
-        offCtx.translate(cx, cy);
+        offCtx.translate(cx + ax, cy + ay);
         offCtx.rotate((formA.rotation * Math.PI) / 180);
         this.drawShape(offCtx, formA.shape, rA, fgColor, wireframe);
         offCtx.restore();
@@ -1223,6 +1231,7 @@ class StudioEngine {
       case "penetration": {
         // Transparent overlap where intersecting area reverses or shows transparency
         ctx.save();
+        ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
         this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
         ctx.restore();
@@ -1239,11 +1248,13 @@ class StudioEngine {
       case "coincidence": {
         // Form B perfectly aligned over Form A
         ctx.save();
+        ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
         this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
         ctx.restore();
 
         ctx.save();
+        ctx.translate(ox, oy);
         ctx.rotate((formB.rotation * Math.PI) / 180);
         this.drawShape(ctx, formB.shape, rB, bgColor, true, 2);
         ctx.restore();
@@ -1252,6 +1263,51 @@ class StudioEngine {
     }
 
     ctx.restore();
+  }
+
+  // Build the boundary path for a cell in the given grid variation
+  buildCellPath(ctx, r, c, rows, cols, cx, cy, cellW, cellH, rep, margin) {
+    ctx.beginPath();
+    if (rep.gridType === "sheared") {
+      const rad = (rep.shearAngle * Math.PI) / 180;
+      const dxTop = -(cellH / 2) * Math.tan(rad);
+      const dxBot = (cellH / 2) * Math.tan(rad);
+      ctx.moveTo(cx - cellW / 2 + dxTop, cy - cellH / 2);
+      ctx.lineTo(cx + cellW / 2 + dxTop, cy - cellH / 2);
+      ctx.lineTo(cx + cellW / 2 + dxBot, cy + cellH / 2);
+      ctx.lineTo(cx - cellW / 2 + dxBot, cy + cellH / 2);
+    } else if (rep.gridType === "triangular") {
+      const isUp = (r + c) % 2 === 0;
+      if (isUp) {
+        ctx.moveTo(cx, cy - cellH / 2);
+        ctx.lineTo(cx + cellW * 0.55, cy + cellH / 2);
+        ctx.lineTo(cx - cellW * 0.55, cy + cellH / 2);
+      } else {
+        ctx.moveTo(cx, cy + cellH / 2);
+        ctx.lineTo(cx + cellW * 0.55, cy - cellH / 2);
+        ctx.lineTo(cx - cellW * 0.55, cy - cellH / 2);
+      }
+    } else if (rep.gridType === "curved") {
+      const wTop = Math.sin((r / rows) * Math.PI * 2) * rep.curveIntensity;
+      const wBot = Math.sin(((r + 1) / rows) * Math.PI * 2) * rep.curveIntensity;
+      const baseX = margin + c * cellW;
+      ctx.moveTo(baseX + wTop, cy - cellH / 2);
+      ctx.lineTo(baseX + cellW + wTop, cy - cellH / 2);
+      ctx.lineTo(baseX + cellW + wBot, cy + cellH / 2);
+      ctx.lineTo(baseX + wBot, cy + cellH / 2);
+    } else if (rep.gridType === "zigzag") {
+      const zTop = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
+      const zBot = ((r + 1) % 2 === 0 ? 1 : -1) * rep.curveIntensity;
+      const baseX = margin + c * cellW;
+      ctx.moveTo(baseX + zTop, cy - cellH / 2);
+      ctx.lineTo(baseX + cellW + zTop, cy - cellH / 2);
+      ctx.lineTo(baseX + cellW + zBot, cy + cellH / 2);
+      ctx.lineTo(baseX + zBot, cy + cellH / 2);
+    } else {
+      // Basic orthogonal, sliding, alternating
+      ctx.rect(cx - cellW / 2 + 0.5, cy - cellH / 2 + 0.5, cellW - 1, cellH - 1);
+    }
+    ctx.closePath();
   }
 
   // Render the repetition grid
@@ -1269,12 +1325,18 @@ class StudioEngine {
     const baseScale = Math.min(cellW, cellH) * 0.45;
     const normScale = baseScale / 100;
 
+    // Wrap in outer bounding clip so shapes never bleed outside grid canvas
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin, margin, usableW, usableH);
+    ctx.clip();
+
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         let cx = margin + (c + 0.5) * cellW;
         let cy = margin + (r + 0.5) * cellH;
 
-        // Apply grid deformations
+        // Apply grid deformations to center coordinates
         if (rep.gridType === "sliding") {
           if (r % 2 === 1) cx += cellW * rep.slideOffset;
         } else if (rep.gridType === "sheared") {
@@ -1292,23 +1354,25 @@ class StudioEngine {
 
         ctx.save();
 
-        // Active clipping: restrict drawing to cell boundaries
-        if (rep.activeClipping) {
-          ctx.beginPath();
-          ctx.rect(cx - cellW / 2 + 1, cy - cellH / 2 + 1, cellW - 2, cellH - 2);
-          ctx.clip();
-        }
-
-        // Color inversion check
+        const isOddCell = (r + c) % 2 === 1;
         let fgColor = palette.fg;
         let bgColor = palette.bg;
-        const isOddCell = (r + c) % 2 === 1;
 
+        // Checkerboard inversion
         if (rep.checkerInvert && isOddCell) {
+          ctx.save();
+          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cellW, cellH, rep, margin);
           ctx.fillStyle = palette.fg;
-          ctx.fillRect(cx - cellW / 2, cy - cellH / 2, cellW, cellH);
+          ctx.fill();
+          ctx.restore();
           fgColor = palette.bg;
           bgColor = palette.fg;
+        }
+
+        // Active clipping: restrict drawing strictly to cell boundaries
+        if (rep.activeClipping) {
+          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cellW, cellH, rep, margin);
+          ctx.clip();
         }
 
         ctx.translate(cx, cy);
@@ -1323,12 +1387,15 @@ class StudioEngine {
       }
     }
 
+    ctx.restore(); // end outer clip
+
     // Optional visible structure grid lines
     if (rep.showGridLines) {
       ctx.save();
       ctx.strokeStyle = palette.grid;
       ctx.lineWidth = rep.gridLineWidth;
 
+      // Draw horizontal lines
       for (let r = 0; r <= rows; r++) {
         const y = margin + r * cellH;
         ctx.beginPath();
@@ -1336,13 +1403,40 @@ class StudioEngine {
         ctx.lineTo(width - margin, y);
         ctx.stroke();
       }
+
+      // Draw vertical / deformed lines
       for (let c = 0; c <= cols; c++) {
-        const x = margin + c * cellW;
+        const baseX = margin + c * cellW;
         ctx.beginPath();
-        ctx.moveTo(x, margin);
-        ctx.lineTo(x, height - margin);
+
+        if (rep.gridType === "sheared") {
+          const rad = (rep.shearAngle * Math.PI) / 180;
+          const topX = baseX - (rows / 2) * Math.tan(rad) * (cellH * 0.6);
+          const botX = baseX + (rows / 2) * Math.tan(rad) * (cellH * 0.6);
+          ctx.moveTo(topX, margin);
+          ctx.lineTo(botX, height - margin);
+        } else if (rep.gridType === "curved") {
+          ctx.moveTo(baseX, margin);
+          const steps = 30;
+          for (let s = 1; s <= steps; s++) {
+            const frac = s / steps;
+            const y = margin + frac * usableH;
+            const wave = Math.sin(frac * Math.PI * 2) * rep.curveIntensity;
+            ctx.lineTo(baseX + wave, y);
+          }
+        } else if (rep.gridType === "zigzag") {
+          ctx.moveTo(baseX, margin);
+          for (let r = 0; r < rows; r++) {
+            const zig = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
+            ctx.lineTo(baseX + zig, margin + (r + 1) * cellH);
+          }
+        } else {
+          ctx.moveTo(baseX, margin);
+          ctx.lineTo(baseX, height - margin);
+        }
         ctx.stroke();
       }
+
       ctx.restore();
     }
   }
@@ -1361,15 +1455,36 @@ class StudioEngine {
     const fgColor = this.state.invertFigureGround ? palette.bg : palette.fg;
     const bgColor = this.state.invertFigureGround ? palette.fg : palette.bg;
 
-    // 2. Safe Bounds (dashed red/pink line matching wireframe)
+    // 2. Architectural Guide Grid & Safe Bounds (faint red grid matching wireframe)
     if (this.state.showSafeBounds) {
       ctx.save();
-      ctx.strokeStyle = palette.accent;
-      ctx.globalAlpha = 0.45;
-      ctx.setLineDash([4, 4]);
-      ctx.lineWidth = 1;
       const margin = 28;
+
+      // Draw faint red architectural coordinate grid
+      ctx.strokeStyle = palette.accent;
+      ctx.globalAlpha = 0.12;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      const gridSize = 48;
+      for (let x = margin; x <= width - margin; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, margin);
+        ctx.lineTo(x, height - margin);
+        ctx.stroke();
+      }
+      for (let y = margin; y <= height - margin; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(margin, y);
+        ctx.lineTo(width - margin, y);
+        ctx.stroke();
+      }
+
+      // Dashed red outer safe boundary
+      ctx.globalAlpha = 0.5;
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1.2;
       ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+
       ctx.restore();
     }
 
@@ -3814,6 +3929,26 @@ class WongApp {
       this.renderStudio();
     });
 
+    // Form A Offsets
+    const offXA = document.getElementById("input-form-a-offset-x");
+    const offYA = document.getElementById("input-form-a-offset-y");
+    const valOffXA = document.getElementById("val-form-a-offset-x");
+    const valOffYA = document.getElementById("val-form-a-offset-y");
+
+    offXA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formA.offsetX = v;
+      if (valOffXA) valOffXA.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    offYA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.formA.offsetY = v;
+      if (valOffYA) valOffYA.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
     // Form B Scale, Rotation, Offsets
     const scaleB = document.getElementById("input-form-b-scale");
     const rotB = document.getElementById("input-form-b-rotation");
@@ -3852,7 +3987,7 @@ class WongApp {
       this.renderStudio();
     });
 
-    // Toggle Form B Enabled/Disabled
+    // Toggle Form B Enabled/Disabled (+ to add, - to remove)
     const toggleFormBBtn = document.getElementById("toggle-form-b-btn");
     const formBStatusBadge = document.getElementById("form-b-status-badge");
     const formBControls = document.getElementById("form-b-controls");
@@ -3868,14 +4003,19 @@ class WongApp {
         formBStatusBadge.className = "text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
         formBControls.classList.remove("opacity-40", "pointer-events-none");
         formBPicker.classList.remove("opacity-40", "pointer-events-none");
+        toggleFormBBtn.innerHTML = `<i data-lucide="minus" class="w-3.5 h-3.5"></i>`;
+        toggleFormBBtn.title = "Deactivate Form B";
         this.showToast("Form B Activated");
       } else {
         formBStatusBadge.textContent = "Inactive";
         formBStatusBadge.className = "text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-muted)]";
         formBControls.classList.add("opacity-40", "pointer-events-none");
         formBPicker.classList.add("opacity-40", "pointer-events-none");
+        toggleFormBBtn.innerHTML = `<i data-lucide="plus" class="w-3.5 h-3.5"></i>`;
+        toggleFormBBtn.title = "Activate Form B";
         this.showToast("Form B Disabled (Single Form Mode)");
       }
+      if (window.lucide) window.lucide.createIcons();
       this.renderStudio();
     });
 
@@ -3988,6 +4128,10 @@ class WongApp {
     setText("val-form-a-scale", s.formA.scale);
     setVal("input-form-a-rotation", s.formA.rotation);
     setText("val-form-a-rotation", `${s.formA.rotation}°`);
+    setVal("input-form-a-offset-x", s.formA.offsetX || 0);
+    setText("val-form-a-offset-x", `${s.formA.offsetX || 0}px`);
+    setVal("input-form-a-offset-y", s.formA.offsetY || 0);
+    setText("val-form-a-offset-y", `${s.formA.offsetY || 0}px`);
 
     setVal("input-form-b-scale", s.formB.scale);
     setText("val-form-b-scale", s.formB.scale);
@@ -3997,6 +4141,14 @@ class WongApp {
     setText("val-form-b-offset-x", `${s.formB.offsetX}px`);
     setVal("input-form-b-offset-y", s.formB.offsetY);
     setText("val-form-b-offset-y", `${s.formB.offsetY}px`);
+
+    const toggleFormBBtn = document.getElementById("toggle-form-b-btn");
+    if (toggleFormBBtn) {
+      toggleFormBBtn.innerHTML = s.formB.enabled
+        ? `<i data-lucide="minus" class="w-3.5 h-3.5"></i>`
+        : `<i data-lucide="plus" class="w-3.5 h-3.5"></i>`;
+      toggleFormBBtn.title = s.formB.enabled ? "Deactivate Form B" : "Activate Form B";
+    }
 
     setVal("interrelation-select", s.interrelation);
 
