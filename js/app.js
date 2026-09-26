@@ -333,7 +333,7 @@ class WongApp {
           const radToggleEl = document.getElementById("mod-radiation-toggle");
           if (radToggleEl) radToggleEl.checked = false;
           document.getElementById("accordion-radiation")?.classList.add("hidden");
-          this.showToast("Repetición activada: cambio a la retícula cartesiana (se desactiva Radiación).", 4000);
+          this.showToast("Repetition active: switched to Cartesian grid (Radiation deactivated).", 4000);
         } else {
           this.showToast("Repetition Modifier Activated (Cartesian Matrix)");
         }
@@ -411,11 +411,11 @@ class WongApp {
           if (repToggleEl) repToggleEl.checked = true;
           document.getElementById("accordion-repetition")?.classList.remove("hidden");
 
-          this.showToast("Estructura activada: cambio a la retícula cartesiana (se desactiva Radiación).", 4000);
+          this.showToast("Structure active: switched to Cartesian grid (Radiation deactivated).", 4000);
         } else {
           const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
           if (!hasRep) {
-            this.showToast("Structure modula los intervalos de la retícula. Activa 'Repetition' para visualizar su efecto sobre el diseño.", 4200);
+            this.showToast("Structure modulates grid intervals. Activate 'Repetition' to visualize its effect on the composition.", 4200);
           } else {
             this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
           }
@@ -485,7 +485,7 @@ class WongApp {
         simAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Similarity opera sobre familias de módulos. Activa 'Repetition' o 'Radiation' para apreciar las variaciones de parentesco.", 4200);
+          this.showToast("Similarity operates across module families. Activate 'Repetition' or 'Radiation' to observe kinship variations.", 4200);
         } else {
           this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
         }
@@ -540,7 +540,7 @@ class WongApp {
         gradAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Gradation requiere una secuencia de pasos. Activa 'Repetition' o 'Radiation' para ver la progresión en el canvas.", 4200);
+          this.showToast("Gradation requires a progression of modules. Activate 'Repetition' or 'Radiation' to display dynamic transition on canvas.", 4200);
         } else {
           this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
         }
@@ -613,7 +613,7 @@ class WongApp {
         }
 
         if (hadCartesian) {
-          this.showToast("Radiación activada: cambio al sistema polar (se desactivan Repetición y Estructura).", 4000);
+          this.showToast("Radiation active: switched to polar system (Repetition and Structure deactivated).", 4000);
         } else {
           this.showToast("Radiation Active: Polar Structural Framework");
         }
@@ -687,7 +687,7 @@ class WongApp {
         anomAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Anomaly rompe una regularidad previa. Activa 'Repetition' o 'Radiation' para generar el campo regular donde actúa el epicentro.", 4500);
+          this.showToast("Anomaly introduces an irregular disruption. Activate 'Repetition' or 'Radiation' to establish the regular discipline.", 4500);
         } else {
           this.showToast("Anomaly Active: Irregularity Focal Tension");
         }
@@ -768,12 +768,32 @@ class WongApp {
       this.renderStudio();
     });
 
-    // Interactive canvas click to reposition Anomaly Epicenter
+    // Interactive canvas click to reposition Anomaly Epicenter or Concentration Attractor
     this.studioCanvas?.addEventListener("click", (e) => {
-      if (this.studioEngine.state.modifiers.anomaly.enabled) {
-        const rect = this.studioCanvas.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left) / rect.width;
-        const clickY = (e.clientY - rect.top) / rect.height;
+      const rect = this.studioCanvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) / rect.width;
+      const clickY = (e.clientY - rect.top) / rect.height;
+
+      const concAcc = document.getElementById("accordion-concentration");
+      const anomAcc = document.getElementById("accordion-anomaly");
+
+      // Prioritize the modifier whose accordion is visibly expanded
+      if (this.studioEngine.state.modifiers.concentration.enabled && concAcc && !concAcc.classList.contains("hidden")) {
+        this.studioEngine.state.modifiers.concentration.attractorX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.concentration.attractorY = Math.max(0.05, Math.min(0.95, clickY));
+        updateConcCoordsUI();
+        this.renderStudio();
+      } else if (this.studioEngine.state.modifiers.anomaly.enabled && anomAcc && !anomAcc.classList.contains("hidden")) {
+        this.studioEngine.state.modifiers.anomaly.epicenterX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.anomaly.epicenterY = Math.max(0.05, Math.min(0.95, clickY));
+        updateAnomCoordsUI();
+        this.renderStudio();
+      } else if (this.studioEngine.state.modifiers.concentration.enabled) {
+        this.studioEngine.state.modifiers.concentration.attractorX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.concentration.attractorY = Math.max(0.05, Math.min(0.95, clickY));
+        updateConcCoordsUI();
+        this.renderStudio();
+      } else if (this.studioEngine.state.modifiers.anomaly.enabled) {
         this.studioEngine.state.modifiers.anomaly.epicenterX = Math.max(0.05, Math.min(0.95, clickX));
         this.studioEngine.state.modifiers.anomaly.epicenterY = Math.max(0.05, Math.min(0.95, clickY));
         updateAnomCoordsUI();
@@ -794,7 +814,7 @@ class WongApp {
         contrastAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Contrast distribuye dominancia (mayoría vs. minoría). Activa 'Repetition' o 'Radiation' para manifestarse sobre la composición.", 4500);
+          this.showToast("Contrast establishes visual disparity (majority vs. minority). Activate 'Repetition' or 'Radiation' to distribute across modules.", 4500);
         } else {
           this.showToast("Contrast Active: Visual Disparity & Dominance");
         }
@@ -855,6 +875,153 @@ class WongApp {
 
     document.getElementById("check-contrast-highlight")?.addEventListener("change", (e) => {
       this.studioEngine.state.modifiers.contrast.highlightContrast = e.target.checked;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Concentration Modifier (Chapter 10)
+    // ------------------------------------------------------------
+    const concToggle = document.getElementById("mod-concentration-toggle");
+    const concAccordion = document.getElementById("accordion-concentration");
+
+    concToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.concentration.enabled = isChecked;
+      if (isChecked) {
+        concAccordion?.classList.remove("hidden");
+        const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasGrid) {
+          this.showToast("Concentration gathers modules into focal clusters. Activate 'Repetition' or 'Radiation' to establish the modular field.", 4500);
+        } else {
+          this.showToast("Concentration Active: Gravitational Field & Density");
+        }
+      } else {
+        concAccordion?.classList.add("hidden");
+        this.showToast("Concentration Deactivated");
+      }
+      this.updateModifierDependencyWarnings();
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("conc-mode")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.concentration.mode = val;
+      const lineBox = document.getElementById("conc-line-axis-box");
+      if (lineBox) lineBox.classList.toggle("hidden", val !== "line");
+      this.renderStudio();
+    });
+
+    document.getElementById("conc-line-axis")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.lineAxis = e.target.value;
+      this.renderStudio();
+    });
+
+    const updateConcCoordsUI = () => {
+      const xPct = Math.round(this.studioEngine.state.modifiers.concentration.attractorX * 100);
+      const yPct = Math.round(this.studioEngine.state.modifiers.concentration.attractorY * 100);
+      const valCoords = document.getElementById("val-conc-coords");
+      if (valCoords) valCoords.textContent = `${xPct}%, ${yPct}%`;
+      const inputX = document.getElementById("input-conc-x");
+      const inputY = document.getElementById("input-conc-y");
+      if (inputX) inputX.value = xPct;
+      if (inputY) inputY.value = yPct;
+    };
+
+    document.getElementById("input-conc-x")?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.concentration.attractorX = parseInt(e.target.value, 10) / 100;
+      updateConcCoordsUI();
+      this.renderStudio();
+    });
+
+    document.getElementById("input-conc-y")?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.concentration.attractorY = parseInt(e.target.value, 10) / 100;
+      updateConcCoordsUI();
+      this.renderStudio();
+    });
+
+    const concPower = document.getElementById("input-conc-power");
+    const valConcPower = document.getElementById("val-conc-power");
+    concPower?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.concentration.power = v;
+      if (valConcPower) valConcPower.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const concRadius = document.getElementById("input-conc-radius");
+    const valConcRadius = document.getElementById("val-conc-radius");
+    concRadius?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.concentration.radius = v;
+      if (valConcRadius) valConcRadius.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-conc-align")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.alignToField = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-conc-scale")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.densityScale = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-conc-guide")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.showAttractor = e.target.checked;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Texture Modifier (Chapter 11)
+    // ------------------------------------------------------------
+    const textToggle = document.getElementById("mod-texture-toggle");
+    const textAccordion = document.getElementById("accordion-texture");
+
+    textToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.texture.enabled = isChecked;
+      if (isChecked) {
+        textAccordion?.classList.remove("hidden");
+        this.showToast("Texture Active: Visual Surface & Tactile Grain");
+      } else {
+        textAccordion?.classList.add("hidden");
+        this.showToast("Texture Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("text-mode")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.texture.mode = e.target.value;
+      this.renderStudio();
+    });
+
+    const textDensity = document.getElementById("input-text-density");
+    const valTextDensity = document.getElementById("val-text-density");
+    textDensity?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.texture.density = v;
+      if (valTextDensity) valTextDensity.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const textScale = document.getElementById("input-text-scale");
+    const valTextScale = document.getElementById("val-text-scale");
+    textScale?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.texture.scale = v;
+      if (valTextScale) valTextScale.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    const textContrast = document.getElementById("input-text-contrast");
+    const valTextContrast = document.getElementById("val-text-contrast");
+    textContrast?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.texture.contrast = v;
+      if (valTextContrast) valTextContrast.textContent = `${v}%`;
       this.renderStudio();
     });
 
@@ -1080,6 +1247,53 @@ class WongApp {
     const checkContrastHl = document.getElementById("check-contrast-highlight");
     if (checkContrastHl) checkContrastHl.checked = s.modifiers.contrast.highlightContrast;
 
+    // Concentration sync
+    const concToggle = document.getElementById("mod-concentration-toggle");
+    if (concToggle) concToggle.checked = s.modifiers.concentration.enabled;
+    const concAccordion = document.getElementById("accordion-concentration");
+    if (concAccordion) {
+      if (s.modifiers.concentration.enabled) concAccordion.classList.remove("hidden");
+      else concAccordion.classList.add("hidden");
+    }
+    setVal("conc-mode", s.modifiers.concentration.mode);
+    const lineAxisBox = document.getElementById("conc-line-axis-box");
+    if (lineAxisBox) lineAxisBox.classList.toggle("hidden", s.modifiers.concentration.mode !== "line");
+    setVal("conc-line-axis", s.modifiers.concentration.lineAxis || "horizontal");
+
+    const concXPct = Math.round((s.modifiers.concentration.attractorX ?? 0.5) * 100);
+    const concYPct = Math.round((s.modifiers.concentration.attractorY ?? 0.5) * 100);
+    setVal("input-conc-x", concXPct);
+    setVal("input-conc-y", concYPct);
+    setText("val-conc-coords", `${concXPct}%, ${concYPct}%`);
+
+    setVal("input-conc-power", s.modifiers.concentration.power);
+    setText("val-conc-power", `${s.modifiers.concentration.power}%`);
+    setVal("input-conc-radius", s.modifiers.concentration.radius);
+    setText("val-conc-radius", `${s.modifiers.concentration.radius}px`);
+
+    const checkConcAlign = document.getElementById("check-conc-align");
+    if (checkConcAlign) checkConcAlign.checked = s.modifiers.concentration.alignToField;
+    const checkConcScale = document.getElementById("check-conc-scale");
+    if (checkConcScale) checkConcScale.checked = s.modifiers.concentration.densityScale;
+    const checkConcGuide = document.getElementById("check-conc-guide");
+    if (checkConcGuide) checkConcGuide.checked = s.modifiers.concentration.showAttractor;
+
+    // Texture sync
+    const textToggle = document.getElementById("mod-texture-toggle");
+    if (textToggle) textToggle.checked = s.modifiers.texture.enabled;
+    const textAccordion = document.getElementById("accordion-texture");
+    if (textAccordion) {
+      if (s.modifiers.texture.enabled) textAccordion.classList.remove("hidden");
+      else textAccordion.classList.add("hidden");
+    }
+    setVal("text-mode", s.modifiers.texture.mode);
+    setVal("input-text-density", s.modifiers.texture.density);
+    setText("val-text-density", `${s.modifiers.texture.density}%`);
+    setVal("input-text-scale", s.modifiers.texture.scale);
+    setText("val-text-scale", `${s.modifiers.texture.scale}px`);
+    setVal("input-text-contrast", s.modifiers.texture.contrast);
+    setText("val-text-contrast", `${s.modifiers.texture.contrast}%`);
+
     this.initStudioShapePickers();
     this.updateModifierDependencyWarnings();
     this.updateStudioColophon();
@@ -1133,6 +1347,15 @@ class WongApp {
         warnContrast.classList.remove("hidden");
       } else {
         warnContrast.classList.add("hidden");
+      }
+    }
+
+    const warnConc = document.getElementById("dep-warning-concentration");
+    if (warnConc) {
+      if (!hasGrid) {
+        warnConc.classList.remove("hidden");
+      } else {
+        warnConc.classList.add("hidden");
       }
     }
 

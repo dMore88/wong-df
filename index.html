@@ -388,7 +388,7 @@
               <div id="dep-warning-structure" class="hidden pt-2">
                 <div class="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] flex items-start gap-1.5 leading-snug">
                   <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
-                  <span>Structure modula los intervalos de la retícula. Requiere activar <strong>Repetition</strong> para visualizar su efecto sobre el diseño.</span>
+                  <span>Structure modulates grid intervals. Requires activating <strong>Repetition</strong> to visualize its effect on the composition.</span>
                 </div>
               </div>
 
@@ -454,7 +454,7 @@
               <div id="dep-warning-similarity" class="hidden pt-2">
                 <div class="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] flex items-start gap-1.5 leading-snug">
                   <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
-                  <span>Similarity opera sobre familias de módulos. Requiere activar <strong>Repetition</strong> o <strong>Radiation</strong> para desplegar variaciones de parentesco.</span>
+                  <span>Similarity operates across module families. Requires activating <strong>Repetition</strong> or <strong>Radiation</strong> to display kinship variations.</span>
                 </div>
               </div>
 
@@ -520,7 +520,7 @@
               <div id="dep-warning-gradation" class="hidden pt-2">
                 <div class="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] flex items-start gap-1.5 leading-snug">
                   <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
-                  <span>Gradation requiere una secuencia de módulos. Activa <strong>Repetition</strong> o <strong>Radiation</strong> para recorrer la progresión en el canvas.</span>
+                  <span>Gradation requires a module progression. Requires activating <strong>Repetition</strong> or <strong>Radiation</strong> to view the gradient on canvas.</span>
                 </div>
               </div>
 
@@ -665,7 +665,7 @@
               <div id="dep-warning-anomaly" class="hidden pt-2">
                 <div class="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] flex items-start gap-1.5 leading-snug">
                   <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
-                  <span>Anomaly rompe una regularidad previa. Requiere activar <strong>Repetition</strong> o <strong>Radiation</strong> para generar el campo regular donde actúa el epicentro.</span>
+                  <span>Anomaly introduces a focal disruption into a regular discipline. Requires activating <strong>Repetition</strong> or <strong>Radiation</strong> to establish the base field.</span>
                 </div>
               </div>
 
@@ -769,7 +769,7 @@
               <div id="dep-warning-contrast" class="hidden pt-2">
                 <div class="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] flex items-start gap-1.5 leading-snug">
                   <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
-                  <span>Contrast distribuye dominancia (mayoría vs. minoría). Requiere activar <strong>Repetition</strong> o <strong>Radiation</strong> para manifestarse sobre la composición.</span>
+                  <span>Contrast distributes visual dominance (majority vs minority). Requires activating <strong>Repetition</strong> or <strong>Radiation</strong> to manifest disparity across the composition.</span>
                 </div>
               </div>
 
@@ -840,27 +840,165 @@
           </div>
 
           <!-- 8. CONCENTRATION -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Concentration</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Density and emphasis in a field</div>
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Concentration</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Density, gathering & voids</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-concentration-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Concentration -->
+            <div id="accordion-concentration" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <!-- Prerequisite Warning -->
+              <div id="dep-warning-concentration" class="hidden pt-2">
+                <div class="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] flex items-start gap-1.5 leading-snug">
+                  <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
+                  <span>Concentration gathers modules towards focal zones. Requires activating <strong>Repetition</strong> or <strong>Radiation</strong> to establish the modular field.</span>
+                </div>
+              </div>
+
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Concentration Structure</label>
+                <div class="relative">
+                  <select id="conc-mode" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="point">Fig. 65a: Concentration Toward a Point</option>
+                    <option value="void">Fig. 65b: Concentration Away from a Point (Void)</option>
+                    <option value="line">Fig. 65c: Concentration Toward a Line</option>
+                    <option value="free">Fig. 65e: Free Concentration (Multiple Hotspots)</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Line Axis (shown when mode == line) -->
+              <div id="conc-line-axis-box" class="hidden">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Axis Orientation</label>
+                <div class="relative">
+                  <select id="conc-line-axis" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="horizontal">Horizontal Fault Line</option>
+                    <option value="vertical">Vertical Fault Line</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Attractor Coordinates X, Y -->
+              <div id="conc-coords-box">
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-1">
+                  <span>Attractor Focal Coordinate</span>
+                  <span id="val-conc-coords" class="font-mono text-accent font-bold">50%, 50%</span>
+                </div>
+                <div class="text-[10px] text-[var(--text-muted)] mb-1.5">
+                  Tip: Click anywhere on the studio canvas to reposition the attractor.
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-[10px] text-[var(--text-muted)]">X Position</span>
+                    <input type="range" id="input-conc-x" min="5" max="95" step="1" value="50">
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-[var(--text-muted)]">Y Position</span>
+                    <input type="range" id="input-conc-y" min="5" max="95" step="1" value="50">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Power & Radius -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Gathering Pull</span>
+                    <span id="val-conc-power" class="font-mono text-accent font-bold">65%</span>
+                  </div>
+                  <input type="range" id="input-conc-power" min="20" max="100" step="5" value="65">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Field Radius</span>
+                    <span id="val-conc-radius" class="font-mono text-accent font-bold">240px</span>
+                  </div>
+                  <input type="range" id="input-conc-radius" min="80" max="450" step="10" value="240">
+                </div>
+              </div>
+
+              <!-- Checkboxes: Align to field & Show attractor -->
+              <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Orient Modules to Field Flow (Fig. 66e)</span>
+                  <input type="checkbox" id="check-conc-align" checked>
+                </label>
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Dynamic Density Scale</span>
+                  <input type="checkbox" id="check-conc-scale" checked>
+                </label>
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Display Attractor Guide</span>
+                  <input type="checkbox" id="check-conc-guide" checked>
+                </label>
+              </div>
+            </div>
           </div>
 
           <!-- 9. TEXTURE -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Texture</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Surface and tactile information</div>
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Texture</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Surface grain & tactile raster</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-texture-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Texture -->
+            <div id="accordion-texture" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Texture Category</label>
+                <div class="relative">
+                  <select id="text-mode" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="grain">Fig. 69b: Lithographic Tooth & Stipple Grain</option>
+                    <option value="halftone">Fig. 67c: Mechanical Dot Screen (Halftone)</option>
+                    <option value="ribbing">Fig. 68a: Woven Linear Ribbing / Hatching</option>
+                    <option value="typography">Fig. 71: Typography as Visual Texture</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Density & Scale -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Packing Density</span>
+                    <span id="val-text-density" class="font-mono text-accent font-bold">50%</span>
+                  </div>
+                  <input type="range" id="input-text-density" min="20" max="90" step="5" value="50">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Grain / Dot Scale</span>
+                    <span id="val-text-scale" class="font-mono text-accent font-bold">14px</span>
+                  </div>
+                  <input type="range" id="input-text-scale" min="6" max="36" step="2" value="14">
+                </div>
+              </div>
+
+              <!-- Contrast / Opacity -->
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                  <span>Tactile Intensity</span>
+                  <span id="val-text-contrast" class="font-mono text-accent font-bold">40%</span>
+                </div>
+                <input type="range" id="input-text-contrast" min="15" max="80" step="5" value="40">
+              </div>
+            </div>
           </div>
 
           <!-- 10. SPACE -->

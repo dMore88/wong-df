@@ -95,8 +95,25 @@ export const defaultStudioState = {
       angle: 45, // clash angle for direction contrast
       highlightContrast: false // highlight minority elements
     },
-    concentration: { enabled: false },
-    texture: { enabled: false },
+    concentration: {
+      enabled: false,
+      mode: "point", // point, void, line, free
+      attractorX: 0.5,
+      attractorY: 0.5,
+      power: 65, // 20 to 100
+      radius: 240, // 80 to 450
+      lineAxis: "horizontal", // horizontal, vertical
+      alignToField: true,
+      densityScale: true,
+      showAttractor: true
+    },
+    texture: {
+      enabled: false,
+      mode: "grain", // grain, halftone, ribbing, typography
+      density: 50, // 20 to 90
+      scale: 14, // 6 to 36
+      contrast: 40 // opacity 15 to 80
+    },
     space: { enabled: false }
   },
 
@@ -385,6 +402,7 @@ export class StudioEngine {
     const grad = this.state.modifiers.gradation;
     const anom = this.state.modifiers.anomaly;
     const contrast = this.state.modifiers.contrast;
+    const conc = this.state.modifiers.concentration;
 
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
@@ -493,6 +511,77 @@ export class StudioEngine {
           cy += pRand(11) * sim.cellJitter;
         }
 
+        // Concentration Field Displacement & Density Kinematics (Chapter 10)
+        let concAngle = 0;
+        let concScaleMul = 1.0;
+        if (conc && conc.enabled) {
+          const attX = (conc.attractorX ?? 0.5) * width;
+          const attY = (conc.attractorY ?? 0.5) * height;
+          const power = (conc.power ?? 65) / 100;
+          const radius = conc.radius ?? 240;
+
+          if (conc.mode === "point") {
+            const dist = Math.hypot(cx - attX, cy - attY);
+            if (dist < radius) {
+              const factor = Math.pow(1 - dist / radius, 1.4) * power;
+              const pull = factor * (radius * 0.45);
+              const angle = Math.atan2(attY - cy, attX - cx);
+              cx += Math.cos(angle) * pull;
+              cy += Math.sin(angle) * pull;
+              concAngle = angle;
+              if (conc.densityScale) concScaleMul = 0.55 + (dist / radius) * 0.7;
+            }
+          } else if (conc.mode === "void") {
+            const dist = Math.hypot(cx - attX, cy - attY);
+            if (dist < radius) {
+              const factor = Math.pow(1 - dist / radius, 1.2) * power;
+              const push = factor * (radius * 0.55);
+              const angle = Math.atan2(cy - attY, cx - attX);
+              cx += Math.cos(angle) * push;
+              cy += Math.sin(angle) * push;
+              concAngle = angle + Math.PI / 2;
+              if (conc.densityScale) concScaleMul = 0.4 + (dist / radius) * 0.8;
+            }
+          } else if (conc.mode === "line") {
+            if (conc.lineAxis === "vertical") {
+              const distX = Math.abs(cx - attX);
+              if (distX < radius) {
+                const factor = Math.pow(1 - distX / radius, 1.4) * power;
+                const pullX = (attX - cx) * factor * 0.75;
+                cx += pullX;
+                concAngle = (attX >= cx ? 0 : Math.PI);
+                if (conc.densityScale) concScaleMul = 0.65 + (distX / radius) * 0.6;
+              }
+            } else {
+              const distY = Math.abs(cy - attY);
+              if (distY < radius) {
+                const factor = Math.pow(1 - distY / radius, 1.4) * power;
+                const pullY = (attY - cy) * factor * 0.75;
+                cy += pullY;
+                concAngle = (attY >= cy ? Math.PI / 2 : -Math.PI / 2);
+                if (conc.densityScale) concScaleMul = 0.65 + (distY / radius) * 0.6;
+              }
+            }
+          } else if (conc.mode === "free") {
+            const att2X = width - attX;
+            const att2Y = height - attY;
+            const dist1 = Math.hypot(cx - attX, cy - attY);
+            const dist2 = Math.hypot(cx - att2X, cy - att2Y);
+            const nearestDist = Math.min(dist1, dist2);
+            const targetX = dist1 < dist2 ? attX : att2X;
+            const targetY = dist1 < dist2 ? attY : att2Y;
+            if (nearestDist < radius) {
+              const factor = Math.pow(1 - nearestDist / radius, 1.4) * power;
+              const pull = factor * (radius * 0.4);
+              const angle = Math.atan2(targetY - cy, targetX - cx);
+              cx += Math.cos(angle) * pull;
+              cy += Math.sin(angle) * pull;
+              concAngle = angle;
+              if (conc.densityScale) concScaleMul = 0.65 + (nearestDist / radius) * 0.6;
+            }
+          }
+        }
+
         ctx.save();
 
         const isOddCell = (r + c) % 2 === 1;
@@ -517,6 +606,11 @@ export class StudioEngine {
         }
 
         ctx.translate(cx, cy);
+
+        // Concentration directional flow
+        if (conc && conc.enabled && conc.alignToField && concAngle !== 0) {
+          ctx.rotate(concAngle);
+        }
 
         // Alternating mirror / rotation
         if (rep.gridType === "alternating" && isOddCell) {
@@ -666,7 +760,7 @@ export class StudioEngine {
         }
 
         const baseScale = Math.min(cW, cH) * 0.45;
-        const normScale = (baseScale / 100) * cellScaleMul;
+        const normScale = (baseScale / 100) * cellScaleMul * concScaleMul;
         this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe);
         ctx.restore();
       }
@@ -750,6 +844,11 @@ export class StudioEngine {
       ctx.stroke();
       ctx.restore();
     }
+
+    // Concentration attractor guide overlay
+    if (conc && conc.enabled && conc.showAttractor) {
+      this.drawAttractorGuide(ctx, width, height, palette, conc);
+    }
   }
 
   // Render the polar radiation layout (Chapter 7)
@@ -759,6 +858,7 @@ export class StudioEngine {
     const sim = this.state.modifiers.similarity;
     const anom = this.state.modifiers.anomaly;
     const contrast = this.state.modifiers.contrast;
+    const conc = this.state.modifiers.concentration;
 
     const margin = 35;
     const usableW = width - margin * 2;
@@ -804,11 +904,87 @@ export class StudioEngine {
           const x = center.x + ringRadius * Math.cos(angle);
           const y = center.y + ringRadius * Math.sin(angle);
 
+          let posX = x;
+          let posY = y;
+          let concAngle = 0;
+          let concScaleMul = 1.0;
+
+          if (conc && conc.enabled) {
+            const attX = (conc.attractorX ?? 0.5) * width;
+            const attY = (conc.attractorY ?? 0.5) * height;
+            const power = (conc.power ?? 65) / 100;
+            const radius = conc.radius ?? 240;
+
+            if (conc.mode === "point") {
+              const dist = Math.hypot(posX - attX, posY - attY);
+              if (dist < radius) {
+                const factor = Math.pow(1 - dist / radius, 1.4) * power;
+                const pull = factor * (radius * 0.45);
+                const a = Math.atan2(attY - posY, attX - posX);
+                posX += Math.cos(a) * pull;
+                posY += Math.sin(a) * pull;
+                concAngle = a;
+                if (conc.densityScale) concScaleMul = 0.55 + (dist / radius) * 0.7;
+              }
+            } else if (conc.mode === "void") {
+              const dist = Math.hypot(posX - attX, posY - attY);
+              if (dist < radius) {
+                const factor = Math.pow(1 - dist / radius, 1.2) * power;
+                const push = factor * (radius * 0.55);
+                const a = Math.atan2(posY - attY, posX - attX);
+                posX += Math.cos(a) * push;
+                posY += Math.sin(a) * push;
+                concAngle = a + Math.PI / 2;
+                if (conc.densityScale) concScaleMul = 0.4 + (dist / radius) * 0.8;
+              }
+            } else if (conc.mode === "line") {
+              if (conc.lineAxis === "vertical") {
+                const distX = Math.abs(posX - attX);
+                if (distX < radius) {
+                  const factor = Math.pow(1 - distX / radius, 1.4) * power;
+                  posX += (attX - posX) * factor * 0.75;
+                  concAngle = (attX >= posX ? 0 : Math.PI);
+                  if (conc.densityScale) concScaleMul = 0.65 + (distX / radius) * 0.6;
+                }
+              } else {
+                const distY = Math.abs(posY - attY);
+                if (distY < radius) {
+                  const factor = Math.pow(1 - distY / radius, 1.4) * power;
+                  posY += (attY - posY) * factor * 0.75;
+                  concAngle = (attY >= posY ? Math.PI / 2 : -Math.PI / 2);
+                  if (conc.densityScale) concScaleMul = 0.65 + (distY / radius) * 0.6;
+                }
+              }
+            } else if (conc.mode === "free") {
+              const att2X = width - attX;
+              const att2Y = height - attY;
+              const dist1 = Math.hypot(posX - attX, posY - attY);
+              const dist2 = Math.hypot(posX - att2X, posY - att2Y);
+              const nearestDist = Math.min(dist1, dist2);
+              const targetX = dist1 < dist2 ? attX : att2X;
+              const targetY = dist1 < dist2 ? attY : att2Y;
+              if (nearestDist < radius) {
+                const factor = Math.pow(1 - nearestDist / radius, 1.4) * power;
+                const pull = factor * (radius * 0.4);
+                const a = Math.atan2(targetY - posY, targetX - posX);
+                posX += Math.cos(a) * pull;
+                posY += Math.sin(a) * pull;
+                concAngle = a;
+                if (conc.densityScale) concScaleMul = 0.65 + (nearestDist / radius) * 0.6;
+              }
+            }
+          }
+
           // Check bounds
-          if (x < margin || x > width - margin || y < margin || y > height - margin) continue;
+          if (posX < margin || posX > width - margin || posY < margin || posY > height - margin) continue;
 
           ctx.save();
-          ctx.translate(x, y);
+          ctx.translate(posX, posY);
+
+          // Concentration directional flow
+          if (conc && conc.enabled && conc.alignToField && concAngle !== 0) {
+            ctx.rotate(concAngle);
+          }
 
           // Base radiation orientation
           if (rad.scheme === "centrifugal" || rad.scheme === "multi_center") {
@@ -941,7 +1117,7 @@ export class StudioEngine {
           }
 
           // Natural centrifugal growth scale: outer modules larger, inner smaller
-          const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul;
+          const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul * concScaleMul;
           this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), cellFg, cellBg, null, null, cellShapeA, cellWireframe);
           ctx.restore();
         }
@@ -1016,6 +1192,11 @@ export class StudioEngine {
       ctx.stroke();
       ctx.restore();
     }
+
+    // Concentration attractor guide overlay on radiation
+    if (conc && conc.enabled && conc.showAttractor) {
+      this.drawAttractorGuide(ctx, width, height, palette, conc);
+    }
   }
 
   // Master render method
@@ -1088,5 +1269,173 @@ export class StudioEngine {
       ctx.fill();
       ctx.restore();
     }
+
+    // 5. Tactile Texture Rendering (Chapter 11)
+    if (this.state.modifiers.texture.enabled) {
+      this.renderTexture(ctx, width, height, palette);
+    }
+  }
+
+  // Concentration Attractor Field Guide (Chapter 10)
+  drawAttractorGuide(ctx, width, height, palette, conc) {
+    const attX = (conc.attractorX ?? 0.5) * width;
+    const attY = (conc.attractorY ?? 0.5) * height;
+    const radius = conc.radius ?? 240;
+
+    ctx.save();
+    ctx.strokeStyle = palette.accent;
+    ctx.fillStyle = palette.accent;
+
+    if (conc.mode === "line") {
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([6, 6]);
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      if (conc.lineAxis === "vertical") {
+        ctx.moveTo(attX, 0);
+        ctx.lineTo(attX, height);
+      } else {
+        ctx.moveTo(0, attY);
+        ctx.lineTo(width, attY);
+      }
+      ctx.stroke();
+
+      // Influence boundary lines
+      ctx.globalAlpha = 0.18;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      if (conc.lineAxis === "vertical") {
+        ctx.moveTo(attX - radius, 0);
+        ctx.lineTo(attX - radius, height);
+        ctx.moveTo(attX + radius, 0);
+        ctx.lineTo(attX + radius, height);
+      } else {
+        ctx.moveTo(0, attY - radius);
+        ctx.lineTo(width, attY - radius);
+        ctx.moveTo(0, attY + radius);
+        ctx.lineTo(width, attY + radius);
+      }
+      ctx.stroke();
+    } else {
+      // Concentric gravitational rings
+      const rings = [radius * 0.35, radius * 0.7, radius];
+      rings.forEach((r, idx) => {
+        ctx.beginPath();
+        ctx.setLineDash([3, 4]);
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.15 + (3 - idx) * 0.12;
+        ctx.arc(attX, attY, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Central attractor point
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath();
+      ctx.arc(attX, attY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (conc.mode === "free") {
+        // Complementary node for dual hotspot
+        const att2X = width - attX;
+        const att2Y = height - attY;
+        ctx.beginPath();
+        ctx.arc(att2X, att2Y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.setLineDash([3, 4]);
+        ctx.globalAlpha = 0.25;
+        ctx.beginPath();
+        ctx.arc(att2X, att2Y, radius * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // Tactile Texture Engine (Chapter 11)
+  renderTexture(ctx, width, height, palette) {
+    const text = this.state.modifiers.texture;
+    if (!text || !text.enabled) return;
+
+    ctx.save();
+    const fgColor = this.state.invertFigureGround ? palette.bg : palette.fg;
+    const alpha = (text.contrast ?? 40) / 100;
+    const density = (text.density ?? 50) / 100;
+    const scale = text.scale ?? 14;
+
+    if (text.mode === "grain") {
+      // Fig. 69b: Lithographic tooth & stipple paper grain
+      ctx.fillStyle = fgColor;
+      const count = Math.floor(width * height * 0.00035 * (0.5 + density));
+      let s = 1234567;
+      const rng = () => {
+        s = (s * 1664525 + 1013904223) % 4294967296;
+        return s / 4294967296;
+      };
+      ctx.globalAlpha = Math.min(0.5, alpha * 0.45);
+      const dotSize = Math.max(1, scale * 0.12);
+      for (let i = 0; i < count; i++) {
+        const gx = rng() * width;
+        const gy = rng() * height;
+        ctx.fillRect(gx, gy, dotSize, dotSize);
+      }
+    } else if (text.mode === "halftone") {
+      // Fig. 67c: Mechanical dot raster screen
+      ctx.fillStyle = fgColor;
+      ctx.globalAlpha = Math.min(0.55, alpha * 0.5);
+      const step = Math.max(8, Math.round(34 - density * 18));
+      const maxDot = (step * 0.38) * (scale / 14);
+      for (let y = step / 2; y < height; y += step) {
+        for (let x = step / 2; x < width; x += step) {
+          const dist = Math.hypot(x - width / 2, y - height / 2);
+          const factor = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(dist * 0.012));
+          const r = Math.max(0.6, maxDot * factor);
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (text.mode === "ribbing") {
+      // Fig. 68a: Woven linear ribbing / parallel hatching
+      ctx.strokeStyle = fgColor;
+      ctx.lineWidth = Math.max(0.8, scale * 0.08);
+      ctx.globalAlpha = Math.min(0.45, alpha * 0.4);
+      const step = Math.max(4, Math.round(24 - density * 16));
+      ctx.beginPath();
+      for (let y = 0; y < height; y += step) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+      }
+      ctx.stroke();
+    } else if (text.mode === "typography") {
+      // Fig. 71: Typography as Visual Texture (Wong Exercise)
+      const letters = ["A", "B", "R", "X", "M", "Q", "S", "8", "■", "┼", "╱", "╲"];
+      const step = Math.max(14, Math.round(48 - density * 24));
+      const cols = Math.floor(width / step);
+      const rows = Math.floor(height / step);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `bold ${Math.round(scale)}px "Space Grotesk", monospace, sans-serif`;
+      ctx.fillStyle = fgColor;
+      ctx.globalAlpha = Math.min(0.45, alpha * 0.4);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = (c + 0.5) * step;
+          const y = (r + 0.5) * step;
+          const hash = Math.sin(r * 37.1 + c * 73.9) * 43758.5453;
+          const rand = hash - Math.floor(hash);
+          const char = letters[Math.floor(rand * letters.length)];
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((rand - 0.5) * 0.6);
+          ctx.fillText(char, 0, 0);
+          ctx.restore();
+        }
+      }
+    }
+
+    ctx.restore();
   }
 }

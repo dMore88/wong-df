@@ -1089,8 +1089,25 @@ const defaultStudioState = {
       angle: 45, // clash angle for direction contrast
       highlightContrast: false // highlight minority elements
     },
-    concentration: { enabled: false },
-    texture: { enabled: false },
+    concentration: {
+      enabled: false,
+      mode: "point", // point, void, line, free
+      attractorX: 0.5,
+      attractorY: 0.5,
+      power: 65, // 20 to 100
+      radius: 240, // 80 to 450
+      lineAxis: "horizontal", // horizontal, vertical
+      alignToField: true,
+      densityScale: true,
+      showAttractor: true
+    },
+    texture: {
+      enabled: false,
+      mode: "grain", // grain, halftone, ribbing, typography
+      density: 50, // 20 to 90
+      scale: 14, // 6 to 36
+      contrast: 40 // opacity 15 to 80
+    },
     space: { enabled: false }
   },
 
@@ -1379,6 +1396,7 @@ class StudioEngine {
     const grad = this.state.modifiers.gradation;
     const anom = this.state.modifiers.anomaly;
     const contrast = this.state.modifiers.contrast;
+    const conc = this.state.modifiers.concentration;
 
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
@@ -1487,6 +1505,77 @@ class StudioEngine {
           cy += pRand(11) * sim.cellJitter;
         }
 
+        // Concentration Field Displacement & Density Kinematics (Chapter 10)
+        let concAngle = 0;
+        let concScaleMul = 1.0;
+        if (conc && conc.enabled) {
+          const attX = (conc.attractorX ?? 0.5) * width;
+          const attY = (conc.attractorY ?? 0.5) * height;
+          const power = (conc.power ?? 65) / 100;
+          const radius = conc.radius ?? 240;
+
+          if (conc.mode === "point") {
+            const dist = Math.hypot(cx - attX, cy - attY);
+            if (dist < radius) {
+              const factor = Math.pow(1 - dist / radius, 1.4) * power;
+              const pull = factor * (radius * 0.45);
+              const angle = Math.atan2(attY - cy, attX - cx);
+              cx += Math.cos(angle) * pull;
+              cy += Math.sin(angle) * pull;
+              concAngle = angle;
+              if (conc.densityScale) concScaleMul = 0.55 + (dist / radius) * 0.7;
+            }
+          } else if (conc.mode === "void") {
+            const dist = Math.hypot(cx - attX, cy - attY);
+            if (dist < radius) {
+              const factor = Math.pow(1 - dist / radius, 1.2) * power;
+              const push = factor * (radius * 0.55);
+              const angle = Math.atan2(cy - attY, cx - attX);
+              cx += Math.cos(angle) * push;
+              cy += Math.sin(angle) * push;
+              concAngle = angle + Math.PI / 2;
+              if (conc.densityScale) concScaleMul = 0.4 + (dist / radius) * 0.8;
+            }
+          } else if (conc.mode === "line") {
+            if (conc.lineAxis === "vertical") {
+              const distX = Math.abs(cx - attX);
+              if (distX < radius) {
+                const factor = Math.pow(1 - distX / radius, 1.4) * power;
+                const pullX = (attX - cx) * factor * 0.75;
+                cx += pullX;
+                concAngle = (attX >= cx ? 0 : Math.PI);
+                if (conc.densityScale) concScaleMul = 0.65 + (distX / radius) * 0.6;
+              }
+            } else {
+              const distY = Math.abs(cy - attY);
+              if (distY < radius) {
+                const factor = Math.pow(1 - distY / radius, 1.4) * power;
+                const pullY = (attY - cy) * factor * 0.75;
+                cy += pullY;
+                concAngle = (attY >= cy ? Math.PI / 2 : -Math.PI / 2);
+                if (conc.densityScale) concScaleMul = 0.65 + (distY / radius) * 0.6;
+              }
+            }
+          } else if (conc.mode === "free") {
+            const att2X = width - attX;
+            const att2Y = height - attY;
+            const dist1 = Math.hypot(cx - attX, cy - attY);
+            const dist2 = Math.hypot(cx - att2X, cy - att2Y);
+            const nearestDist = Math.min(dist1, dist2);
+            const targetX = dist1 < dist2 ? attX : att2X;
+            const targetY = dist1 < dist2 ? attY : att2Y;
+            if (nearestDist < radius) {
+              const factor = Math.pow(1 - nearestDist / radius, 1.4) * power;
+              const pull = factor * (radius * 0.4);
+              const angle = Math.atan2(targetY - cy, targetX - cx);
+              cx += Math.cos(angle) * pull;
+              cy += Math.sin(angle) * pull;
+              concAngle = angle;
+              if (conc.densityScale) concScaleMul = 0.65 + (nearestDist / radius) * 0.6;
+            }
+          }
+        }
+
         ctx.save();
 
         const isOddCell = (r + c) % 2 === 1;
@@ -1511,6 +1600,11 @@ class StudioEngine {
         }
 
         ctx.translate(cx, cy);
+
+        // Concentration directional flow
+        if (conc && conc.enabled && conc.alignToField && concAngle !== 0) {
+          ctx.rotate(concAngle);
+        }
 
         // Alternating mirror / rotation
         if (rep.gridType === "alternating" && isOddCell) {
@@ -1660,7 +1754,7 @@ class StudioEngine {
         }
 
         const baseScale = Math.min(cW, cH) * 0.45;
-        const normScale = (baseScale / 100) * cellScaleMul;
+        const normScale = (baseScale / 100) * cellScaleMul * concScaleMul;
         this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe);
         ctx.restore();
       }
@@ -1744,6 +1838,11 @@ class StudioEngine {
       ctx.stroke();
       ctx.restore();
     }
+
+    // Concentration attractor guide overlay
+    if (conc && conc.enabled && conc.showAttractor) {
+      this.drawAttractorGuide(ctx, width, height, palette, conc);
+    }
   }
 
   // Render the polar radiation layout (Chapter 7)
@@ -1753,6 +1852,7 @@ class StudioEngine {
     const sim = this.state.modifiers.similarity;
     const anom = this.state.modifiers.anomaly;
     const contrast = this.state.modifiers.contrast;
+    const conc = this.state.modifiers.concentration;
 
     const margin = 35;
     const usableW = width - margin * 2;
@@ -1798,11 +1898,87 @@ class StudioEngine {
           const x = center.x + ringRadius * Math.cos(angle);
           const y = center.y + ringRadius * Math.sin(angle);
 
+          let posX = x;
+          let posY = y;
+          let concAngle = 0;
+          let concScaleMul = 1.0;
+
+          if (conc && conc.enabled) {
+            const attX = (conc.attractorX ?? 0.5) * width;
+            const attY = (conc.attractorY ?? 0.5) * height;
+            const power = (conc.power ?? 65) / 100;
+            const radius = conc.radius ?? 240;
+
+            if (conc.mode === "point") {
+              const dist = Math.hypot(posX - attX, posY - attY);
+              if (dist < radius) {
+                const factor = Math.pow(1 - dist / radius, 1.4) * power;
+                const pull = factor * (radius * 0.45);
+                const a = Math.atan2(attY - posY, attX - posX);
+                posX += Math.cos(a) * pull;
+                posY += Math.sin(a) * pull;
+                concAngle = a;
+                if (conc.densityScale) concScaleMul = 0.55 + (dist / radius) * 0.7;
+              }
+            } else if (conc.mode === "void") {
+              const dist = Math.hypot(posX - attX, posY - attY);
+              if (dist < radius) {
+                const factor = Math.pow(1 - dist / radius, 1.2) * power;
+                const push = factor * (radius * 0.55);
+                const a = Math.atan2(posY - attY, posX - attX);
+                posX += Math.cos(a) * push;
+                posY += Math.sin(a) * push;
+                concAngle = a + Math.PI / 2;
+                if (conc.densityScale) concScaleMul = 0.4 + (dist / radius) * 0.8;
+              }
+            } else if (conc.mode === "line") {
+              if (conc.lineAxis === "vertical") {
+                const distX = Math.abs(posX - attX);
+                if (distX < radius) {
+                  const factor = Math.pow(1 - distX / radius, 1.4) * power;
+                  posX += (attX - posX) * factor * 0.75;
+                  concAngle = (attX >= posX ? 0 : Math.PI);
+                  if (conc.densityScale) concScaleMul = 0.65 + (distX / radius) * 0.6;
+                }
+              } else {
+                const distY = Math.abs(posY - attY);
+                if (distY < radius) {
+                  const factor = Math.pow(1 - distY / radius, 1.4) * power;
+                  posY += (attY - posY) * factor * 0.75;
+                  concAngle = (attY >= posY ? Math.PI / 2 : -Math.PI / 2);
+                  if (conc.densityScale) concScaleMul = 0.65 + (distY / radius) * 0.6;
+                }
+              }
+            } else if (conc.mode === "free") {
+              const att2X = width - attX;
+              const att2Y = height - attY;
+              const dist1 = Math.hypot(posX - attX, posY - attY);
+              const dist2 = Math.hypot(posX - att2X, posY - att2Y);
+              const nearestDist = Math.min(dist1, dist2);
+              const targetX = dist1 < dist2 ? attX : att2X;
+              const targetY = dist1 < dist2 ? attY : att2Y;
+              if (nearestDist < radius) {
+                const factor = Math.pow(1 - nearestDist / radius, 1.4) * power;
+                const pull = factor * (radius * 0.4);
+                const a = Math.atan2(targetY - posY, targetX - posX);
+                posX += Math.cos(a) * pull;
+                posY += Math.sin(a) * pull;
+                concAngle = a;
+                if (conc.densityScale) concScaleMul = 0.65 + (nearestDist / radius) * 0.6;
+              }
+            }
+          }
+
           // Check bounds
-          if (x < margin || x > width - margin || y < margin || y > height - margin) continue;
+          if (posX < margin || posX > width - margin || posY < margin || posY > height - margin) continue;
 
           ctx.save();
-          ctx.translate(x, y);
+          ctx.translate(posX, posY);
+
+          // Concentration directional flow
+          if (conc && conc.enabled && conc.alignToField && concAngle !== 0) {
+            ctx.rotate(concAngle);
+          }
 
           // Base radiation orientation
           if (rad.scheme === "centrifugal" || rad.scheme === "multi_center") {
@@ -1935,7 +2111,7 @@ class StudioEngine {
           }
 
           // Natural centrifugal growth scale: outer modules larger, inner smaller
-          const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul;
+          const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul * concScaleMul;
           this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), cellFg, cellBg, null, null, cellShapeA, cellWireframe);
           ctx.restore();
         }
@@ -2010,6 +2186,11 @@ class StudioEngine {
       ctx.stroke();
       ctx.restore();
     }
+
+    // Concentration attractor guide overlay on radiation
+    if (conc && conc.enabled && conc.showAttractor) {
+      this.drawAttractorGuide(ctx, width, height, palette, conc);
+    }
   }
 
   // Master render method
@@ -2082,6 +2263,174 @@ class StudioEngine {
       ctx.fill();
       ctx.restore();
     }
+
+    // 5. Tactile Texture Rendering (Chapter 11)
+    if (this.state.modifiers.texture.enabled) {
+      this.renderTexture(ctx, width, height, palette);
+    }
+  }
+
+  // Concentration Attractor Field Guide (Chapter 10)
+  drawAttractorGuide(ctx, width, height, palette, conc) {
+    const attX = (conc.attractorX ?? 0.5) * width;
+    const attY = (conc.attractorY ?? 0.5) * height;
+    const radius = conc.radius ?? 240;
+
+    ctx.save();
+    ctx.strokeStyle = palette.accent;
+    ctx.fillStyle = palette.accent;
+
+    if (conc.mode === "line") {
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([6, 6]);
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      if (conc.lineAxis === "vertical") {
+        ctx.moveTo(attX, 0);
+        ctx.lineTo(attX, height);
+      } else {
+        ctx.moveTo(0, attY);
+        ctx.lineTo(width, attY);
+      }
+      ctx.stroke();
+
+      // Influence boundary lines
+      ctx.globalAlpha = 0.18;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      if (conc.lineAxis === "vertical") {
+        ctx.moveTo(attX - radius, 0);
+        ctx.lineTo(attX - radius, height);
+        ctx.moveTo(attX + radius, 0);
+        ctx.lineTo(attX + radius, height);
+      } else {
+        ctx.moveTo(0, attY - radius);
+        ctx.lineTo(width, attY - radius);
+        ctx.moveTo(0, attY + radius);
+        ctx.lineTo(width, attY + radius);
+      }
+      ctx.stroke();
+    } else {
+      // Concentric gravitational rings
+      const rings = [radius * 0.35, radius * 0.7, radius];
+      rings.forEach((r, idx) => {
+        ctx.beginPath();
+        ctx.setLineDash([3, 4]);
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.15 + (3 - idx) * 0.12;
+        ctx.arc(attX, attY, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Central attractor point
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath();
+      ctx.arc(attX, attY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (conc.mode === "free") {
+        // Complementary node for dual hotspot
+        const att2X = width - attX;
+        const att2Y = height - attY;
+        ctx.beginPath();
+        ctx.arc(att2X, att2Y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.setLineDash([3, 4]);
+        ctx.globalAlpha = 0.25;
+        ctx.beginPath();
+        ctx.arc(att2X, att2Y, radius * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // Tactile Texture Engine (Chapter 11)
+  renderTexture(ctx, width, height, palette) {
+    const text = this.state.modifiers.texture;
+    if (!text || !text.enabled) return;
+
+    ctx.save();
+    const fgColor = this.state.invertFigureGround ? palette.bg : palette.fg;
+    const alpha = (text.contrast ?? 40) / 100;
+    const density = (text.density ?? 50) / 100;
+    const scale = text.scale ?? 14;
+
+    if (text.mode === "grain") {
+      // Fig. 69b: Lithographic tooth & stipple paper grain
+      ctx.fillStyle = fgColor;
+      const count = Math.floor(width * height * 0.00035 * (0.5 + density));
+      let s = 1234567;
+      const rng = () => {
+        s = (s * 1664525 + 1013904223) % 4294967296;
+        return s / 4294967296;
+      };
+      ctx.globalAlpha = Math.min(0.5, alpha * 0.45);
+      const dotSize = Math.max(1, scale * 0.12);
+      for (let i = 0; i < count; i++) {
+        const gx = rng() * width;
+        const gy = rng() * height;
+        ctx.fillRect(gx, gy, dotSize, dotSize);
+      }
+    } else if (text.mode === "halftone") {
+      // Fig. 67c: Mechanical dot raster screen
+      ctx.fillStyle = fgColor;
+      ctx.globalAlpha = Math.min(0.55, alpha * 0.5);
+      const step = Math.max(8, Math.round(34 - density * 18));
+      const maxDot = (step * 0.38) * (scale / 14);
+      for (let y = step / 2; y < height; y += step) {
+        for (let x = step / 2; x < width; x += step) {
+          const dist = Math.hypot(x - width / 2, y - height / 2);
+          const factor = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(dist * 0.012));
+          const r = Math.max(0.6, maxDot * factor);
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (text.mode === "ribbing") {
+      // Fig. 68a: Woven linear ribbing / parallel hatching
+      ctx.strokeStyle = fgColor;
+      ctx.lineWidth = Math.max(0.8, scale * 0.08);
+      ctx.globalAlpha = Math.min(0.45, alpha * 0.4);
+      const step = Math.max(4, Math.round(24 - density * 16));
+      ctx.beginPath();
+      for (let y = 0; y < height; y += step) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+      }
+      ctx.stroke();
+    } else if (text.mode === "typography") {
+      // Fig. 71: Typography as Visual Texture (Wong Exercise)
+      const letters = ["A", "B", "R", "X", "M", "Q", "S", "8", "■", "┼", "╱", "╲"];
+      const step = Math.max(14, Math.round(48 - density * 24));
+      const cols = Math.floor(width / step);
+      const rows = Math.floor(height / step);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `bold ${Math.round(scale)}px "Space Grotesk", monospace, sans-serif`;
+      ctx.fillStyle = fgColor;
+      ctx.globalAlpha = Math.min(0.45, alpha * 0.4);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = (c + 0.5) * step;
+          const y = (r + 0.5) * step;
+          const hash = Math.sin(r * 37.1 + c * 73.9) * 43758.5453;
+          const rand = hash - Math.floor(hash);
+          const char = letters[Math.floor(rand * letters.length)];
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((rand - 0.5) * 0.6);
+          ctx.fillText(char, 0, 0);
+          ctx.restore();
+        }
+      }
+    }
+
+    ctx.restore();
   }
 }
 
@@ -4613,7 +4962,7 @@ class WongApp {
           const radToggleEl = document.getElementById("mod-radiation-toggle");
           if (radToggleEl) radToggleEl.checked = false;
           document.getElementById("accordion-radiation")?.classList.add("hidden");
-          this.showToast("Repetición activada: cambio a la retícula cartesiana (se desactiva Radiación).", 4000);
+          this.showToast("Repetition active: switched to Cartesian grid (Radiation deactivated).", 4000);
         } else {
           this.showToast("Repetition Modifier Activated (Cartesian Matrix)");
         }
@@ -4691,11 +5040,11 @@ class WongApp {
           if (repToggleEl) repToggleEl.checked = true;
           document.getElementById("accordion-repetition")?.classList.remove("hidden");
 
-          this.showToast("Estructura activada: cambio a la retícula cartesiana (se desactiva Radiación).", 4000);
+          this.showToast("Structure active: switched to Cartesian grid (Radiation deactivated).", 4000);
         } else {
           const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
           if (!hasRep) {
-            this.showToast("Structure modula los intervalos de la retícula. Activa 'Repetition' para visualizar su efecto sobre el diseño.", 4200);
+            this.showToast("Structure modulates grid intervals. Activate 'Repetition' to visualize its effect on the composition.", 4200);
           } else {
             this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
           }
@@ -4765,7 +5114,7 @@ class WongApp {
         simAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Similarity opera sobre familias de módulos. Activa 'Repetition' o 'Radiation' para apreciar las variaciones de parentesco.", 4200);
+          this.showToast("Similarity operates across module families. Activate 'Repetition' or 'Radiation' to observe kinship variations.", 4200);
         } else {
           this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
         }
@@ -4820,7 +5169,7 @@ class WongApp {
         gradAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Gradation requiere una secuencia de pasos. Activa 'Repetition' o 'Radiation' para ver la progresión en el canvas.", 4200);
+          this.showToast("Gradation requires a progression of modules. Activate 'Repetition' or 'Radiation' to display dynamic transition on canvas.", 4200);
         } else {
           this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
         }
@@ -4893,7 +5242,7 @@ class WongApp {
         }
 
         if (hadCartesian) {
-          this.showToast("Radiación activada: cambio al sistema polar (se desactivan Repetición y Estructura).", 4000);
+          this.showToast("Radiation active: switched to polar system (Repetition and Structure deactivated).", 4000);
         } else {
           this.showToast("Radiation Active: Polar Structural Framework");
         }
@@ -4967,7 +5316,7 @@ class WongApp {
         anomAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Anomaly rompe una regularidad previa. Activa 'Repetition' o 'Radiation' para generar el campo regular donde actúa el epicentro.", 4500);
+          this.showToast("Anomaly introduces an irregular disruption. Activate 'Repetition' or 'Radiation' to establish the regular discipline.", 4500);
         } else {
           this.showToast("Anomaly Active: Irregularity Focal Tension");
         }
@@ -5048,12 +5397,32 @@ class WongApp {
       this.renderStudio();
     });
 
-    // Interactive canvas click to reposition Anomaly Epicenter
+    // Interactive canvas click to reposition Anomaly Epicenter or Concentration Attractor
     this.studioCanvas?.addEventListener("click", (e) => {
-      if (this.studioEngine.state.modifiers.anomaly.enabled) {
-        const rect = this.studioCanvas.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left) / rect.width;
-        const clickY = (e.clientY - rect.top) / rect.height;
+      const rect = this.studioCanvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) / rect.width;
+      const clickY = (e.clientY - rect.top) / rect.height;
+
+      const concAcc = document.getElementById("accordion-concentration");
+      const anomAcc = document.getElementById("accordion-anomaly");
+
+      // Prioritize the modifier whose accordion is visibly expanded
+      if (this.studioEngine.state.modifiers.concentration.enabled && concAcc && !concAcc.classList.contains("hidden")) {
+        this.studioEngine.state.modifiers.concentration.attractorX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.concentration.attractorY = Math.max(0.05, Math.min(0.95, clickY));
+        updateConcCoordsUI();
+        this.renderStudio();
+      } else if (this.studioEngine.state.modifiers.anomaly.enabled && anomAcc && !anomAcc.classList.contains("hidden")) {
+        this.studioEngine.state.modifiers.anomaly.epicenterX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.anomaly.epicenterY = Math.max(0.05, Math.min(0.95, clickY));
+        updateAnomCoordsUI();
+        this.renderStudio();
+      } else if (this.studioEngine.state.modifiers.concentration.enabled) {
+        this.studioEngine.state.modifiers.concentration.attractorX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.concentration.attractorY = Math.max(0.05, Math.min(0.95, clickY));
+        updateConcCoordsUI();
+        this.renderStudio();
+      } else if (this.studioEngine.state.modifiers.anomaly.enabled) {
         this.studioEngine.state.modifiers.anomaly.epicenterX = Math.max(0.05, Math.min(0.95, clickX));
         this.studioEngine.state.modifiers.anomaly.epicenterY = Math.max(0.05, Math.min(0.95, clickY));
         updateAnomCoordsUI();
@@ -5074,7 +5443,7 @@ class WongApp {
         contrastAccordion?.classList.remove("hidden");
         const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
         if (!hasGrid) {
-          this.showToast("Contrast distribuye dominancia (mayoría vs. minoría). Activa 'Repetition' o 'Radiation' para manifestarse sobre la composición.", 4500);
+          this.showToast("Contrast establishes visual disparity (majority vs. minority). Activate 'Repetition' or 'Radiation' to distribute across modules.", 4500);
         } else {
           this.showToast("Contrast Active: Visual Disparity & Dominance");
         }
@@ -5135,6 +5504,153 @@ class WongApp {
 
     document.getElementById("check-contrast-highlight")?.addEventListener("change", (e) => {
       this.studioEngine.state.modifiers.contrast.highlightContrast = e.target.checked;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Concentration Modifier (Chapter 10)
+    // ------------------------------------------------------------
+    const concToggle = document.getElementById("mod-concentration-toggle");
+    const concAccordion = document.getElementById("accordion-concentration");
+
+    concToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.concentration.enabled = isChecked;
+      if (isChecked) {
+        concAccordion?.classList.remove("hidden");
+        const hasGrid = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.radiation.enabled;
+        if (!hasGrid) {
+          this.showToast("Concentration gathers modules into focal clusters. Activate 'Repetition' or 'Radiation' to establish the modular field.", 4500);
+        } else {
+          this.showToast("Concentration Active: Gravitational Field & Density");
+        }
+      } else {
+        concAccordion?.classList.add("hidden");
+        this.showToast("Concentration Deactivated");
+      }
+      this.updateModifierDependencyWarnings();
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("conc-mode")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.concentration.mode = val;
+      const lineBox = document.getElementById("conc-line-axis-box");
+      if (lineBox) lineBox.classList.toggle("hidden", val !== "line");
+      this.renderStudio();
+    });
+
+    document.getElementById("conc-line-axis")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.lineAxis = e.target.value;
+      this.renderStudio();
+    });
+
+    const updateConcCoordsUI = () => {
+      const xPct = Math.round(this.studioEngine.state.modifiers.concentration.attractorX * 100);
+      const yPct = Math.round(this.studioEngine.state.modifiers.concentration.attractorY * 100);
+      const valCoords = document.getElementById("val-conc-coords");
+      if (valCoords) valCoords.textContent = `${xPct}%, ${yPct}%`;
+      const inputX = document.getElementById("input-conc-x");
+      const inputY = document.getElementById("input-conc-y");
+      if (inputX) inputX.value = xPct;
+      if (inputY) inputY.value = yPct;
+    };
+
+    document.getElementById("input-conc-x")?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.concentration.attractorX = parseInt(e.target.value, 10) / 100;
+      updateConcCoordsUI();
+      this.renderStudio();
+    });
+
+    document.getElementById("input-conc-y")?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.concentration.attractorY = parseInt(e.target.value, 10) / 100;
+      updateConcCoordsUI();
+      this.renderStudio();
+    });
+
+    const concPower = document.getElementById("input-conc-power");
+    const valConcPower = document.getElementById("val-conc-power");
+    concPower?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.concentration.power = v;
+      if (valConcPower) valConcPower.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const concRadius = document.getElementById("input-conc-radius");
+    const valConcRadius = document.getElementById("val-conc-radius");
+    concRadius?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.concentration.radius = v;
+      if (valConcRadius) valConcRadius.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-conc-align")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.alignToField = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-conc-scale")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.densityScale = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-conc-guide")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.concentration.showAttractor = e.target.checked;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Texture Modifier (Chapter 11)
+    // ------------------------------------------------------------
+    const textToggle = document.getElementById("mod-texture-toggle");
+    const textAccordion = document.getElementById("accordion-texture");
+
+    textToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.texture.enabled = isChecked;
+      if (isChecked) {
+        textAccordion?.classList.remove("hidden");
+        this.showToast("Texture Active: Visual Surface & Tactile Grain");
+      } else {
+        textAccordion?.classList.add("hidden");
+        this.showToast("Texture Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("text-mode")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.texture.mode = e.target.value;
+      this.renderStudio();
+    });
+
+    const textDensity = document.getElementById("input-text-density");
+    const valTextDensity = document.getElementById("val-text-density");
+    textDensity?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.texture.density = v;
+      if (valTextDensity) valTextDensity.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const textScale = document.getElementById("input-text-scale");
+    const valTextScale = document.getElementById("val-text-scale");
+    textScale?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.texture.scale = v;
+      if (valTextScale) valTextScale.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    const textContrast = document.getElementById("input-text-contrast");
+    const valTextContrast = document.getElementById("val-text-contrast");
+    textContrast?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.texture.contrast = v;
+      if (valTextContrast) valTextContrast.textContent = `${v}%`;
       this.renderStudio();
     });
 
@@ -5360,6 +5876,53 @@ class WongApp {
     const checkContrastHl = document.getElementById("check-contrast-highlight");
     if (checkContrastHl) checkContrastHl.checked = s.modifiers.contrast.highlightContrast;
 
+    // Concentration sync
+    const concToggle = document.getElementById("mod-concentration-toggle");
+    if (concToggle) concToggle.checked = s.modifiers.concentration.enabled;
+    const concAccordion = document.getElementById("accordion-concentration");
+    if (concAccordion) {
+      if (s.modifiers.concentration.enabled) concAccordion.classList.remove("hidden");
+      else concAccordion.classList.add("hidden");
+    }
+    setVal("conc-mode", s.modifiers.concentration.mode);
+    const lineAxisBox = document.getElementById("conc-line-axis-box");
+    if (lineAxisBox) lineAxisBox.classList.toggle("hidden", s.modifiers.concentration.mode !== "line");
+    setVal("conc-line-axis", s.modifiers.concentration.lineAxis || "horizontal");
+
+    const concXPct = Math.round((s.modifiers.concentration.attractorX ?? 0.5) * 100);
+    const concYPct = Math.round((s.modifiers.concentration.attractorY ?? 0.5) * 100);
+    setVal("input-conc-x", concXPct);
+    setVal("input-conc-y", concYPct);
+    setText("val-conc-coords", `${concXPct}%, ${concYPct}%`);
+
+    setVal("input-conc-power", s.modifiers.concentration.power);
+    setText("val-conc-power", `${s.modifiers.concentration.power}%`);
+    setVal("input-conc-radius", s.modifiers.concentration.radius);
+    setText("val-conc-radius", `${s.modifiers.concentration.radius}px`);
+
+    const checkConcAlign = document.getElementById("check-conc-align");
+    if (checkConcAlign) checkConcAlign.checked = s.modifiers.concentration.alignToField;
+    const checkConcScale = document.getElementById("check-conc-scale");
+    if (checkConcScale) checkConcScale.checked = s.modifiers.concentration.densityScale;
+    const checkConcGuide = document.getElementById("check-conc-guide");
+    if (checkConcGuide) checkConcGuide.checked = s.modifiers.concentration.showAttractor;
+
+    // Texture sync
+    const textToggle = document.getElementById("mod-texture-toggle");
+    if (textToggle) textToggle.checked = s.modifiers.texture.enabled;
+    const textAccordion = document.getElementById("accordion-texture");
+    if (textAccordion) {
+      if (s.modifiers.texture.enabled) textAccordion.classList.remove("hidden");
+      else textAccordion.classList.add("hidden");
+    }
+    setVal("text-mode", s.modifiers.texture.mode);
+    setVal("input-text-density", s.modifiers.texture.density);
+    setText("val-text-density", `${s.modifiers.texture.density}%`);
+    setVal("input-text-scale", s.modifiers.texture.scale);
+    setText("val-text-scale", `${s.modifiers.texture.scale}px`);
+    setVal("input-text-contrast", s.modifiers.texture.contrast);
+    setText("val-text-contrast", `${s.modifiers.texture.contrast}%`);
+
     this.initStudioShapePickers();
     this.updateModifierDependencyWarnings();
     this.updateStudioColophon();
@@ -5413,6 +5976,15 @@ class WongApp {
         warnContrast.classList.remove("hidden");
       } else {
         warnContrast.classList.add("hidden");
+      }
+    }
+
+    const warnConc = document.getElementById("dep-warning-concentration");
+    if (warnConc) {
+      if (!hasGrid) {
+        warnConc.classList.remove("hidden");
+      } else {
+        warnConc.classList.add("hidden");
       }
     }
 
