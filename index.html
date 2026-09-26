@@ -369,28 +369,120 @@
             </div>
           </div>
 
-          <!-- 2. STRUCTURE -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Structure</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Composing marks into relationships</div>
+          <!-- 2. STRUCTURE (Chapter 4) -->
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Structure</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Composing marks into relationships</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-structure-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Structure -->
+            <div id="accordion-structure" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Spatial Framework Mode</label>
+                <div class="relative">
+                  <select id="struct-mode" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="rhythmic">Fig. 23: Dual Rhythmic Interval (A:B)</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Ratios -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Col Ratio (A:B)</span>
+                    <span id="val-struct-col-ratio" class="font-mono text-accent font-bold">1.8x</span>
+                  </div>
+                  <input type="range" id="input-struct-col-ratio" min="1.0" max="3.5" step="0.1" value="1.8">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Row Ratio (A:B)</span>
+                    <span id="val-struct-row-ratio" class="font-mono text-accent font-bold">1.8x</span>
+                  </div>
+                  <input type="range" id="input-struct-row-ratio" min="1.0" max="3.5" step="0.1" value="1.8">
+                </div>
+              </div>
+
+              <!-- Visible Structural Caliber -->
+              <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Visible Caliber Bands (Fig. 20a)</span>
+                  <input type="checkbox" id="check-struct-bands">
+                </label>
+                <div id="struct-band-box" class="hidden flex items-center justify-between gap-2 pt-1">
+                  <span class="text-[10px] text-[var(--text-muted)]">Band Thickness</span>
+                  <input type="range" id="input-struct-band-thick" min="1" max="12" step="1" value="3" class="w-32">
+                  <span id="val-struct-band-thick" class="font-mono text-accent font-bold text-[10px]">3px</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- 3. SIMILARITY -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Similarity</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Recognising patterns and families</div>
+          <!-- 3. SIMILARITY (Chapter 5) -->
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Similarity</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Recognising patterns and families</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-similarity-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Similarity -->
+            <div id="accordion-similarity" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Visual Kinship Type</label>
+                <div class="relative">
+                  <select id="sim-kinship-type" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="distortion">Fig. 28: Elastic Tension / Distortion</option>
+                    <option value="foreshortening">Fig. 30: 3D Spatial Foreshortening</option>
+                    <option value="rotation_wobble">Organic Rotation Wobble</option>
+                    <option value="scale_kinship">Scale Kinship & Imperfection</option>
+                    <option value="hybrid">Hybrid Natural Kinship</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Intensity & Jitter -->
+              <div class="space-y-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Fluctuation Intensity</span>
+                    <span id="val-sim-intensity" class="font-mono text-accent font-bold">50%</span>
+                  </div>
+                  <input type="range" id="input-sim-intensity" min="5" max="100" step="5" value="50">
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Spatial Cell Jitter</span>
+                    <span id="val-sim-jitter" class="font-mono text-accent font-bold">0px</span>
+                  </div>
+                  <input type="range" id="input-sim-jitter" min="0" max="30" step="1" value="0">
+                </div>
+              </div>
+
+              <!-- Shuffle Family Button -->
+              <div class="pt-1">
+                <button id="btn-sim-shuffle" class="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-[11px] font-mono text-[var(--text-primary)] transition-all">
+                  <i data-lucide="shuffle" class="w-3.5 h-3.5 text-accent"></i>
+                  <span>Shuffle Kinship Family</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- 4. GRADATION -->

@@ -41,8 +41,21 @@ export const defaultStudioState = {
       gridLineWidth: 1.5,
       checkerInvert: false
     },
-    structure: { enabled: false },
-    similarity: { enabled: false },
+    structure: {
+      enabled: false,
+      mode: "rhythmic", // rhythmic (A:B:A:B cadence), compression
+      colRatio: 1.8,
+      rowRatio: 1.8,
+      bandThickness: 3,
+      showBands: false
+    },
+    similarity: {
+      enabled: false,
+      kinshipType: "distortion", // distortion, foreshortening, rotation_wobble, scale_kinship, hybrid
+      intensity: 50, // 0 to 100
+      cellJitter: 0, // 0 to 30
+      seed: 42
+    },
     gradation: { enabled: false },
     radiation: { enabled: false },
     anomaly: { enabled: false },
@@ -272,64 +285,118 @@ export class StudioEngine {
   }
 
   // Build the boundary path for a cell in the given grid variation
-  buildCellPath(ctx, r, c, rows, cols, cx, cy, cellW, cellH, rep, margin) {
+  buildCellPath(ctx, r, c, rows, cols, cx, cy, cW, cH, rep, startX) {
     ctx.beginPath();
     if (rep.gridType === "sheared") {
       const rad = (rep.shearAngle * Math.PI) / 180;
-      const dxTop = -(cellH / 2) * Math.tan(rad);
-      const dxBot = (cellH / 2) * Math.tan(rad);
-      ctx.moveTo(cx - cellW / 2 + dxTop, cy - cellH / 2);
-      ctx.lineTo(cx + cellW / 2 + dxTop, cy - cellH / 2);
-      ctx.lineTo(cx + cellW / 2 + dxBot, cy + cellH / 2);
-      ctx.lineTo(cx - cellW / 2 + dxBot, cy + cellH / 2);
+      const dxTop = -(cH / 2) * Math.tan(rad);
+      const dxBot = (cH / 2) * Math.tan(rad);
+      ctx.moveTo(cx - cW / 2 + dxTop, cy - cH / 2);
+      ctx.lineTo(cx + cW / 2 + dxTop, cy - cH / 2);
+      ctx.lineTo(cx + cW / 2 + dxBot, cy + cH / 2);
+      ctx.lineTo(cx - cW / 2 + dxBot, cy + cH / 2);
     } else if (rep.gridType === "triangular") {
       const isUp = (r + c) % 2 === 0;
       if (isUp) {
-        ctx.moveTo(cx, cy - cellH / 2);
-        ctx.lineTo(cx + cellW * 0.55, cy + cellH / 2);
-        ctx.lineTo(cx - cellW * 0.55, cy + cellH / 2);
+        ctx.moveTo(cx, cy - cH / 2);
+        ctx.lineTo(cx + cW * 0.55, cy + cH / 2);
+        ctx.lineTo(cx - cW * 0.55, cy + cH / 2);
       } else {
-        ctx.moveTo(cx, cy + cellH / 2);
-        ctx.lineTo(cx + cellW * 0.55, cy - cellH / 2);
-        ctx.lineTo(cx - cellW * 0.55, cy - cellH / 2);
+        ctx.moveTo(cx, cy + cH / 2);
+        ctx.lineTo(cx + cW * 0.55, cy - cH / 2);
+        ctx.lineTo(cx - cW * 0.55, cy - cH / 2);
       }
     } else if (rep.gridType === "curved") {
       const wTop = Math.sin((r / rows) * Math.PI * 2) * rep.curveIntensity;
       const wBot = Math.sin(((r + 1) / rows) * Math.PI * 2) * rep.curveIntensity;
-      const baseX = margin + c * cellW;
-      ctx.moveTo(baseX + wTop, cy - cellH / 2);
-      ctx.lineTo(baseX + cellW + wTop, cy - cellH / 2);
-      ctx.lineTo(baseX + cellW + wBot, cy + cellH / 2);
-      ctx.lineTo(baseX + wBot, cy + cellH / 2);
+      const baseX = startX;
+      ctx.moveTo(baseX + wTop, cy - cH / 2);
+      ctx.lineTo(baseX + cW + wTop, cy - cH / 2);
+      ctx.lineTo(baseX + cW + wBot, cy + cH / 2);
+      ctx.lineTo(baseX + wBot, cy + cH / 2);
     } else if (rep.gridType === "zigzag") {
       const zTop = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
       const zBot = ((r + 1) % 2 === 0 ? 1 : -1) * rep.curveIntensity;
-      const baseX = margin + c * cellW;
-      ctx.moveTo(baseX + zTop, cy - cellH / 2);
-      ctx.lineTo(baseX + cellW + zTop, cy - cellH / 2);
-      ctx.lineTo(baseX + cellW + zBot, cy + cellH / 2);
-      ctx.lineTo(baseX + zBot, cy + cellH / 2);
+      const baseX = startX;
+      ctx.moveTo(baseX + zTop, cy - cH / 2);
+      ctx.lineTo(baseX + cW + zTop, cy - cH / 2);
+      ctx.lineTo(baseX + cW + zBot, cy + cH / 2);
+      ctx.lineTo(baseX + zBot, cy + cH / 2);
     } else {
       // Basic orthogonal, sliding, alternating
-      ctx.rect(cx - cellW / 2 + 0.5, cy - cellH / 2 + 0.5, cellW - 1, cellH - 1);
+      ctx.rect(cx - cW / 2 + 0.5, cy - cH / 2 + 0.5, cW - 1, cH - 1);
     }
     ctx.closePath();
   }
 
-  // Render the repetition grid
+  // Render the repetition / structural grid with similarity kinematics
   renderRepetitionGrid(ctx, width, height, palette) {
     const rep = this.state.modifiers.repetition;
+    const struct = this.state.modifiers.structure;
+    const sim = this.state.modifiers.similarity;
+
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
 
     const margin = 40;
     const usableW = width - margin * 2;
     const usableH = height - margin * 2;
-    const cellW = usableW / cols;
-    const cellH = usableH / rows;
 
-    const baseScale = Math.min(cellW, cellH) * 0.45;
-    const normScale = baseScale / 100;
+    // Calculate column widths and x positions (Dual rhythmic interval support)
+    const colWidths = [];
+    const colX = [];
+    const colStarts = [];
+    if (struct.enabled && struct.mode === "rhythmic") {
+      const rA = struct.colRatio;
+      let weightSum = 0;
+      for (let c = 0; c < cols; c++) {
+        weightSum += (c % 2 === 0 ? rA : 1.0);
+      }
+      const unitW = usableW / weightSum;
+      let currX = margin;
+      for (let c = 0; c < cols; c++) {
+        const w = (c % 2 === 0 ? rA : 1.0) * unitW;
+        colStarts.push(currX);
+        colWidths.push(w);
+        colX.push(currX + w / 2);
+        currX += w;
+      }
+    } else {
+      const cellW = usableW / cols;
+      for (let c = 0; c < cols; c++) {
+        colStarts.push(margin + c * cellW);
+        colWidths.push(cellW);
+        colX.push(margin + (c + 0.5) * cellW);
+      }
+    }
+
+    // Calculate row heights and y positions (Dual rhythmic interval support)
+    const rowHeights = [];
+    const rowY = [];
+    const rowStarts = [];
+    if (struct.enabled && struct.mode === "rhythmic") {
+      const rA = struct.rowRatio;
+      let weightSum = 0;
+      for (let r = 0; r < rows; r++) {
+        weightSum += (r % 2 === 0 ? rA : 1.0);
+      }
+      const unitH = usableH / weightSum;
+      let currY = margin;
+      for (let r = 0; r < rows; r++) {
+        const h = (r % 2 === 0 ? rA : 1.0) * unitH;
+        rowStarts.push(currY);
+        rowHeights.push(h);
+        rowY.push(currY + h / 2);
+        currY += h;
+      }
+    } else {
+      const cellH = usableH / rows;
+      for (let r = 0; r < rows; r++) {
+        rowStarts.push(margin + r * cellH);
+        rowHeights.push(cellH);
+        rowY.push(margin + (r + 0.5) * cellH);
+      }
+    }
 
     // Wrap in outer bounding clip so shapes never bleed outside grid canvas
     ctx.save();
@@ -337,17 +404,22 @@ export class StudioEngine {
     ctx.rect(margin, margin, usableW, usableH);
     ctx.clip();
 
+    const seed = sim.seed || 42;
+
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        let cx = margin + (c + 0.5) * cellW;
-        let cy = margin + (r + 0.5) * cellH;
+        const cW = colWidths[c];
+        const cH = rowHeights[r];
+        let cx = colX[c];
+        let cy = rowY[r];
+        const startX = colStarts[c];
 
         // Apply grid deformations to center coordinates
         if (rep.gridType === "sliding") {
-          if (r % 2 === 1) cx += cellW * rep.slideOffset;
+          if (r % 2 === 1) cx += cW * rep.slideOffset;
         } else if (rep.gridType === "sheared") {
           const rad = (rep.shearAngle * Math.PI) / 180;
-          cx += (r - rows / 2) * Math.tan(rad) * (cellH * 0.6);
+          cx += (r - rows / 2) * Math.tan(rad) * (cH * 0.6);
         } else if (rep.gridType === "curved") {
           const wave = Math.sin((r / rows) * Math.PI * 2) * rep.curveIntensity;
           cx += wave;
@@ -355,7 +427,19 @@ export class StudioEngine {
           const zig = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
           cx += zig;
         } else if (rep.gridType === "triangular") {
-          if (r % 2 === 1) cx += cellW * 0.5;
+          if (r % 2 === 1) cx += cW * 0.5;
+        }
+
+        // Similarity PRNG helper
+        const pRand = (salt) => {
+          const x = Math.sin(seed * 997 + r * 1337 + c * 31 + salt * 101) * 10000;
+          return (x - Math.floor(x)) * 2 - 1; // -1 to 1
+        };
+
+        // Similarity: cell spatial jitter
+        if (sim.enabled && sim.cellJitter > 0) {
+          cx += pRand(10) * sim.cellJitter;
+          cy += pRand(11) * sim.cellJitter;
         }
 
         ctx.save();
@@ -367,7 +451,7 @@ export class StudioEngine {
         // Checkerboard inversion
         if (rep.checkerInvert && isOddCell) {
           ctx.save();
-          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cellW, cellH, rep, margin);
+          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cW, cH, rep, startX);
           ctx.fillStyle = palette.fg;
           ctx.fill();
           ctx.restore();
@@ -377,7 +461,7 @@ export class StudioEngine {
 
         // Active clipping: restrict drawing strictly to cell boundaries
         if (rep.activeClipping) {
-          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cellW, cellH, rep, margin);
+          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cW, cH, rep, startX);
           ctx.clip();
         }
 
@@ -388,6 +472,36 @@ export class StudioEngine {
           ctx.rotate(Math.PI);
         }
 
+        // Similarity: Module Kinship & Fluctuation
+        if (sim.enabled) {
+          const intensity = (sim.intensity ?? 50) / 100;
+          if (sim.kinshipType === "distortion") {
+            const sx = 1 + pRand(1) * intensity * 0.65;
+            const sy = 1 + pRand(2) * intensity * 0.65;
+            ctx.scale(sx, sy);
+          } else if (sim.kinshipType === "foreshortening") {
+            const rot = pRand(3) * Math.PI;
+            const tilt = Math.max(0.18, 1 - Math.abs(pRand(4)) * intensity * 0.82);
+            ctx.rotate(rot);
+            ctx.scale(1, tilt);
+            ctx.rotate(-rot);
+          } else if (sim.kinshipType === "rotation_wobble") {
+            const wobble = pRand(5) * intensity * (Math.PI / 2);
+            ctx.rotate(wobble);
+          } else if (sim.kinshipType === "scale_kinship") {
+            const sFactor = Math.max(0.2, 1 + pRand(6) * intensity * 0.7);
+            ctx.scale(sFactor, sFactor);
+          } else if (sim.kinshipType === "hybrid") {
+            const sx = 1 + pRand(1) * intensity * 0.35;
+            const sy = 1 + pRand(2) * intensity * 0.35;
+            const wobble = pRand(5) * intensity * 0.4;
+            ctx.rotate(wobble);
+            ctx.scale(sx, sy);
+          }
+        }
+
+        const baseScale = Math.min(cW, cH) * 0.45;
+        const normScale = baseScale / 100;
         this.renderModule(ctx, normScale, fgColor, bgColor);
         ctx.restore();
       }
@@ -396,14 +510,14 @@ export class StudioEngine {
     ctx.restore(); // end outer clip
 
     // Optional visible structure grid lines
-    if (rep.showGridLines) {
+    if (rep.showGridLines || (struct.enabled && struct.showBands)) {
       ctx.save();
       ctx.strokeStyle = palette.grid;
-      ctx.lineWidth = rep.gridLineWidth;
+      ctx.lineWidth = struct.enabled && struct.showBands ? struct.bandThickness : rep.gridLineWidth;
 
       // Draw horizontal lines
       for (let r = 0; r <= rows; r++) {
-        const y = margin + r * cellH;
+        const y = r === rows ? margin + usableH : rowStarts[r];
         ctx.beginPath();
         ctx.moveTo(margin, y);
         ctx.lineTo(width - margin, y);
@@ -412,13 +526,13 @@ export class StudioEngine {
 
       // Draw vertical / deformed lines
       for (let c = 0; c <= cols; c++) {
-        const baseX = margin + c * cellW;
+        const baseX = c === cols ? margin + usableW : colStarts[c];
         ctx.beginPath();
 
         if (rep.gridType === "sheared") {
           const rad = (rep.shearAngle * Math.PI) / 180;
-          const topX = baseX - (rows / 2) * Math.tan(rad) * (cellH * 0.6);
-          const botX = baseX + (rows / 2) * Math.tan(rad) * (cellH * 0.6);
+          const topX = baseX - (rows / 2) * Math.tan(rad) * (rowHeights[0] * 0.6);
+          const botX = baseX + (rows / 2) * Math.tan(rad) * (rowHeights[0] * 0.6);
           ctx.moveTo(topX, margin);
           ctx.lineTo(botX, height - margin);
         } else if (rep.gridType === "curved") {
@@ -434,7 +548,7 @@ export class StudioEngine {
           ctx.moveTo(baseX, margin);
           for (let r = 0; r < rows; r++) {
             const zig = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
-            ctx.lineTo(baseX + zig, margin + (r + 1) * cellH);
+            ctx.lineTo(baseX + zig, margin + (r + 1) * rowHeights[r]);
           }
         } else {
           ctx.moveTo(baseX, margin);
@@ -495,18 +609,39 @@ export class StudioEngine {
     }
 
     // 3. Render Pipeline
-    if (this.state.modifiers.repetition.enabled) {
+    if (this.state.modifiers.repetition.enabled || this.state.modifiers.structure.enabled) {
       this.renderRepetitionGrid(ctx, width, height, palette);
     } else {
       // Single Module Study in Center
       ctx.save();
       ctx.translate(width / 2, height / 2);
+
+      // If similarity is active on single module, apply kinship transform
+      const sim = this.state.modifiers.similarity;
+      if (sim.enabled) {
+        const intensity = (sim.intensity ?? 50) / 100;
+        if (sim.kinshipType === "distortion") {
+          ctx.scale(1 + intensity * 0.45, 1 - intensity * 0.25);
+        } else if (sim.kinshipType === "foreshortening") {
+          ctx.rotate(0.35);
+          ctx.scale(1, Math.max(0.2, 1 - intensity * 0.75));
+          ctx.rotate(-0.35);
+        } else if (sim.kinshipType === "rotation_wobble") {
+          ctx.rotate(intensity * 0.6);
+        } else if (sim.kinshipType === "scale_kinship") {
+          ctx.scale(1 + intensity * 0.4, 1 + intensity * 0.4);
+        } else if (sim.kinshipType === "hybrid") {
+          ctx.rotate(intensity * 0.25);
+          ctx.scale(1 + intensity * 0.25, 1 - intensity * 0.15);
+        }
+      }
+
       this.renderModule(ctx, 1.25, fgColor, bgColor);
       ctx.restore();
     }
 
     // 4. Subtle center reference dot (when in single module mode)
-    if (!this.state.modifiers.repetition.enabled) {
+    if (!this.state.modifiers.repetition.enabled && !this.state.modifiers.structure.enabled) {
       ctx.save();
       ctx.fillStyle = palette.accent;
       ctx.globalAlpha = 0.6;

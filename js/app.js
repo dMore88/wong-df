@@ -379,6 +379,127 @@ class WongApp {
       this.renderStudio();
     });
 
+    // ------------------------------------------------------------
+    // Structure Modifier (Chapter 4)
+    // ------------------------------------------------------------
+    const structToggle = document.getElementById("mod-structure-toggle");
+    const structAccordion = document.getElementById("accordion-structure");
+
+    structToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.structure.enabled = isChecked;
+      if (isChecked) {
+        structAccordion?.classList.remove("hidden");
+        // If repetition wasn't active, activate it as well to establish the grid
+        if (!this.studioEngine.state.modifiers.repetition.enabled) {
+          const repT = document.getElementById("mod-repetition-toggle");
+          if (repT) {
+            repT.checked = true;
+            this.studioEngine.state.modifiers.repetition.enabled = true;
+            document.getElementById("accordion-repetition")?.classList.remove("hidden");
+          }
+        }
+        this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
+      } else {
+        structAccordion?.classList.add("hidden");
+        this.showToast("Structure Modifier Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("struct-mode")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.structure.mode = e.target.value;
+      this.renderStudio();
+    });
+
+    const colRatioInput = document.getElementById("input-struct-col-ratio");
+    const rowRatioInput = document.getElementById("input-struct-row-ratio");
+    const valColRatio = document.getElementById("val-struct-col-ratio");
+    const valRowRatio = document.getElementById("val-struct-row-ratio");
+
+    colRatioInput?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.modifiers.structure.colRatio = v;
+      if (valColRatio) valColRatio.textContent = `${v.toFixed(1)}x`;
+      this.renderStudio();
+    });
+
+    rowRatioInput?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.modifiers.structure.rowRatio = v;
+      if (valRowRatio) valRowRatio.textContent = `${v.toFixed(1)}x`;
+      this.renderStudio();
+    });
+
+    const checkBands = document.getElementById("check-struct-bands");
+    const bandBox = document.getElementById("struct-band-box");
+    checkBands?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.structure.showBands = isChecked;
+      if (isChecked) bandBox?.classList.remove("hidden");
+      else bandBox?.classList.add("hidden");
+      this.renderStudio();
+    });
+
+    const bandThick = document.getElementById("input-struct-band-thick");
+    const valBandThick = document.getElementById("val-struct-band-thick");
+    bandThick?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.structure.bandThickness = v;
+      if (valBandThick) valBandThick.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    // ------------------------------------------------------------
+    // Similarity Modifier (Chapter 5)
+    // ------------------------------------------------------------
+    const simToggle = document.getElementById("mod-similarity-toggle");
+    const simAccordion = document.getElementById("accordion-similarity");
+
+    simToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.similarity.enabled = isChecked;
+      if (isChecked) {
+        simAccordion?.classList.remove("hidden");
+        this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
+      } else {
+        simAccordion?.classList.add("hidden");
+        this.showToast("Similarity Modifier Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("sim-kinship-type")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.similarity.kinshipType = e.target.value;
+      this.renderStudio();
+    });
+
+    const simIntensity = document.getElementById("input-sim-intensity");
+    const valSimIntensity = document.getElementById("val-sim-intensity");
+    simIntensity?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.similarity.intensity = v;
+      if (valSimIntensity) valSimIntensity.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const simJitter = document.getElementById("input-sim-jitter");
+    const valSimJitter = document.getElementById("val-sim-jitter");
+    simJitter?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.similarity.cellJitter = v;
+      if (valSimJitter) valSimJitter.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    document.getElementById("btn-sim-shuffle")?.addEventListener("click", () => {
+      this.studioEngine.state.modifiers.similarity.seed = Math.floor(Math.random() * 100000);
+      this.renderStudio();
+      this.showToast("Shuffled Visual Kinship Family");
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -466,6 +587,43 @@ class WongApp {
     if (checkVis) checkVis.checked = s.modifiers.repetition.showGridLines;
     const checkCheck = document.getElementById("check-rep-checker");
     if (checkCheck) checkCheck.checked = s.modifiers.repetition.checkerInvert;
+
+    // Structure sync
+    const structToggle = document.getElementById("mod-structure-toggle");
+    if (structToggle) structToggle.checked = s.modifiers.structure.enabled;
+    const structAccordion = document.getElementById("accordion-structure");
+    if (structAccordion) {
+      if (s.modifiers.structure.enabled) structAccordion.classList.remove("hidden");
+      else structAccordion.classList.add("hidden");
+    }
+    setVal("struct-mode", s.modifiers.structure.mode);
+    setVal("input-struct-col-ratio", s.modifiers.structure.colRatio);
+    setText("val-struct-col-ratio", `${s.modifiers.structure.colRatio.toFixed(1)}x`);
+    setVal("input-struct-row-ratio", s.modifiers.structure.rowRatio);
+    setText("val-struct-row-ratio", `${s.modifiers.structure.rowRatio.toFixed(1)}x`);
+    const checkBands = document.getElementById("check-struct-bands");
+    if (checkBands) checkBands.checked = s.modifiers.structure.showBands;
+    const bandBox = document.getElementById("struct-band-box");
+    if (bandBox) {
+      if (s.modifiers.structure.showBands) bandBox.classList.remove("hidden");
+      else bandBox.classList.add("hidden");
+    }
+    setVal("input-struct-band-thick", s.modifiers.structure.bandThickness);
+    setText("val-struct-band-thick", `${s.modifiers.structure.bandThickness}px`);
+
+    // Similarity sync
+    const simToggle = document.getElementById("mod-similarity-toggle");
+    if (simToggle) simToggle.checked = s.modifiers.similarity.enabled;
+    const simAccordion = document.getElementById("accordion-similarity");
+    if (simAccordion) {
+      if (s.modifiers.similarity.enabled) simAccordion.classList.remove("hidden");
+      else simAccordion.classList.add("hidden");
+    }
+    setVal("sim-kinship-type", s.modifiers.similarity.kinshipType);
+    setVal("input-sim-intensity", s.modifiers.similarity.intensity);
+    setText("val-sim-intensity", `${s.modifiers.similarity.intensity}%`);
+    setVal("input-sim-jitter", s.modifiers.similarity.cellJitter);
+    setText("val-sim-jitter", `${s.modifiers.similarity.cellJitter}px`);
 
     this.initStudioShapePickers();
     this.updateStudioColophon();
