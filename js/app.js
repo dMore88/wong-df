@@ -621,6 +621,178 @@ class WongApp {
       this.renderStudio();
     });
 
+    // ------------------------------------------------------------
+    // Anomaly Modifier (Chapter 8)
+    // ------------------------------------------------------------
+    const anomToggle = document.getElementById("mod-anomaly-toggle");
+    const anomAccordion = document.getElementById("accordion-anomaly");
+
+    anomToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.anomaly.enabled = isChecked;
+      if (isChecked) {
+        anomAccordion?.classList.remove("hidden");
+        this.showToast("Anomaly Active: Irregularity Focal Tension");
+      } else {
+        anomAccordion?.classList.add("hidden");
+        this.showToast("Anomaly Deactivated: Regularity Restored");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("anom-type")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.anomaly.type = val;
+      const shapeBox = document.getElementById("anom-shape-box");
+      if (shapeBox) {
+        if (val === "focal") shapeBox.classList.remove("hidden");
+        else shapeBox.classList.add("hidden");
+      }
+      this.renderStudio();
+    });
+
+    const anomX = document.getElementById("input-anom-x");
+    const anomY = document.getElementById("input-anom-y");
+    const valAnomCoords = document.getElementById("val-anom-coords");
+
+    const updateAnomCoordsUI = () => {
+      const x = Math.round(this.studioEngine.state.modifiers.anomaly.epicenterX * 100);
+      const y = Math.round(this.studioEngine.state.modifiers.anomaly.epicenterY * 100);
+      if (anomX) anomX.value = x;
+      if (anomY) anomY.value = y;
+      if (valAnomCoords) valAnomCoords.textContent = `${x}%, ${y}%`;
+    };
+
+    anomX?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.anomaly.epicenterX = parseInt(e.target.value, 10) / 100;
+      updateAnomCoordsUI();
+      this.renderStudio();
+    });
+
+    anomY?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.anomaly.epicenterY = parseInt(e.target.value, 10) / 100;
+      updateAnomCoordsUI();
+      this.renderStudio();
+    });
+
+    const anomRadius = document.getElementById("input-anom-radius");
+    const valAnomRadius = document.getElementById("val-anom-radius");
+    anomRadius?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.anomaly.radius = v;
+      if (valAnomRadius) valAnomRadius.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    const anomIntensity = document.getElementById("input-anom-intensity");
+    const valAnomIntensity = document.getElementById("val-anom-intensity");
+    anomIntensity?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.anomaly.intensity = v;
+      if (valAnomIntensity) valAnomIntensity.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    document.getElementById("anom-shape")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.anomaly.anomalousShape = e.target.value;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-anom-highlight")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.anomaly.highlightColor = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-anom-reticle")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.anomaly.showReticle = e.target.checked;
+      this.renderStudio();
+    });
+
+    // Interactive canvas click to reposition Anomaly Epicenter
+    this.studioCanvas?.addEventListener("click", (e) => {
+      if (this.studioEngine.state.modifiers.anomaly.enabled) {
+        const rect = this.studioCanvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) / rect.width;
+        const clickY = (e.clientY - rect.top) / rect.height;
+        this.studioEngine.state.modifiers.anomaly.epicenterX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.anomaly.epicenterY = Math.max(0.05, Math.min(0.95, clickY));
+        updateAnomCoordsUI();
+        this.renderStudio();
+      }
+    });
+
+    // ------------------------------------------------------------
+    // Contrast Modifier (Chapter 9)
+    // ------------------------------------------------------------
+    const contrastToggle = document.getElementById("mod-contrast-toggle");
+    const contrastAccordion = document.getElementById("accordion-contrast");
+
+    contrastToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.contrast.enabled = isChecked;
+      if (isChecked) {
+        contrastAccordion?.classList.remove("hidden");
+        this.showToast("Contrast Active: Visual Disparity & Dominance");
+      } else {
+        contrastAccordion?.classList.add("hidden");
+        this.showToast("Contrast Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("contrast-dimension")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.contrast.dimension = val;
+      const scaleBox = document.getElementById("contrast-scale-box");
+      const shapeBox = document.getElementById("contrast-shape-box");
+      const angleBox = document.getElementById("contrast-angle-box");
+
+      if (scaleBox) scaleBox.classList.toggle("hidden", val !== "scale");
+      if (shapeBox) shapeBox.classList.toggle("hidden", val !== "shape");
+      if (angleBox) angleBox.classList.toggle("hidden", val !== "direction");
+
+      this.renderStudio();
+    });
+
+    const contrastDominance = document.getElementById("input-contrast-dominance");
+    const valContrastDominance = document.getElementById("val-contrast-dominance");
+    contrastDominance?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.contrast.dominanceRatio = v;
+      if (valContrastDominance) valContrastDominance.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const contrastScale = document.getElementById("input-contrast-scale");
+    const valContrastScale = document.getElementById("val-contrast-scale");
+    contrastScale?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.modifiers.contrast.scaleFactor = v;
+      if (valContrastScale) valContrastScale.textContent = `${v.toFixed(1)}x`;
+      this.renderStudio();
+    });
+
+    document.getElementById("contrast-shape")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.contrast.contrastShape = e.target.value;
+      this.renderStudio();
+    });
+
+    const contrastAngle = document.getElementById("input-contrast-angle");
+    const valContrastAngle = document.getElementById("val-contrast-angle");
+    contrastAngle?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.contrast.angle = v;
+      if (valContrastAngle) valContrastAngle.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-contrast-highlight")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.contrast.highlightContrast = e.target.checked;
+      this.renderStudio();
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -787,6 +959,61 @@ class WongApp {
       if (s.modifiers.radiation.scheme === "spiral") twistBox.classList.remove("opacity-40");
       else twistBox.classList.add("opacity-40");
     }
+
+    // Anomaly sync
+    const anomToggle = document.getElementById("mod-anomaly-toggle");
+    if (anomToggle) anomToggle.checked = s.modifiers.anomaly.enabled;
+    const anomAccordion = document.getElementById("accordion-anomaly");
+    if (anomAccordion) {
+      if (s.modifiers.anomaly.enabled) anomAccordion.classList.remove("hidden");
+      else anomAccordion.classList.add("hidden");
+    }
+    setVal("anom-type", s.modifiers.anomaly.type);
+    const shapeBox = document.getElementById("anom-shape-box");
+    if (shapeBox) {
+      if (s.modifiers.anomaly.type === "focal") shapeBox.classList.remove("hidden");
+      else shapeBox.classList.add("hidden");
+    }
+    const xPct = Math.round((s.modifiers.anomaly.epicenterX ?? 0.5) * 100);
+    const yPct = Math.round((s.modifiers.anomaly.epicenterY ?? 0.5) * 100);
+    setVal("input-anom-x", xPct);
+    setVal("input-anom-y", yPct);
+    setText("val-anom-coords", `${xPct}%, ${yPct}%`);
+    setVal("input-anom-radius", s.modifiers.anomaly.radius);
+    setText("val-anom-radius", `${s.modifiers.anomaly.radius}px`);
+    setVal("input-anom-intensity", s.modifiers.anomaly.intensity);
+    setText("val-anom-intensity", `${s.modifiers.anomaly.intensity}%`);
+    setVal("anom-shape", s.modifiers.anomaly.anomalousShape);
+    const checkAnomHl = document.getElementById("check-anom-highlight");
+    if (checkAnomHl) checkAnomHl.checked = s.modifiers.anomaly.highlightColor;
+    const checkAnomRet = document.getElementById("check-anom-reticle");
+    if (checkAnomRet) checkAnomRet.checked = s.modifiers.anomaly.showReticle;
+
+    // Contrast sync
+    const contrastToggle = document.getElementById("mod-contrast-toggle");
+    if (contrastToggle) contrastToggle.checked = s.modifiers.contrast.enabled;
+    const contrastAccordion = document.getElementById("accordion-contrast");
+    if (contrastAccordion) {
+      if (s.modifiers.contrast.enabled) contrastAccordion.classList.remove("hidden");
+      else contrastAccordion.classList.add("hidden");
+    }
+    setVal("contrast-dimension", s.modifiers.contrast.dimension);
+    const scaleBox = document.getElementById("contrast-scale-box");
+    const cShapeBox = document.getElementById("contrast-shape-box");
+    const angleBox = document.getElementById("contrast-angle-box");
+    if (scaleBox) scaleBox.classList.toggle("hidden", s.modifiers.contrast.dimension !== "scale");
+    if (cShapeBox) cShapeBox.classList.toggle("hidden", s.modifiers.contrast.dimension !== "shape");
+    if (angleBox) angleBox.classList.toggle("hidden", s.modifiers.contrast.dimension !== "direction");
+
+    setVal("input-contrast-dominance", s.modifiers.contrast.dominanceRatio);
+    setText("val-contrast-dominance", `${s.modifiers.contrast.dominanceRatio}%`);
+    setVal("input-contrast-scale", s.modifiers.contrast.scaleFactor);
+    setText("val-contrast-scale", `${s.modifiers.contrast.scaleFactor.toFixed(1)}x`);
+    setVal("contrast-shape", s.modifiers.contrast.contrastShape);
+    setVal("input-contrast-angle", s.modifiers.contrast.angle);
+    setText("val-contrast-angle", `${s.modifiers.contrast.angle}°`);
+    const checkContrastHl = document.getElementById("check-contrast-highlight");
+    if (checkContrastHl) checkContrastHl.checked = s.modifiers.contrast.highlightContrast;
 
     this.initStudioShapePickers();
     this.updateStudioColophon();

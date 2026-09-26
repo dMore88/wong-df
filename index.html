@@ -622,28 +622,181 @@
             </div>
           </div>
 
-          <!-- 6. ANOMALY -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Anomaly</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Breaking a sequence to create focus</div>
+          <!-- 6. ANOMALY (Chapter 8) -->
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Anomaly</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Breaking regularity to create focus</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-anomaly-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Anomaly -->
+            <div id="accordion-anomaly" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Manifestation Type</label>
+                <div class="relative">
+                  <select id="anom-type" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="focal">Fig. 56a: Focal Epicenter (Attracting the Eye)</option>
+                    <option value="fracture">Fig. 56d: Tectonic Fault Line / Rupture</option>
+                    <option value="swell">Fig. 57a: Gravitational Swell / Relieving Monotony</option>
+                    <option value="tear">Fig. 58e: Void Tear / Structural Disintegration</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Epicenter Coordinates (X / Y) -->
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-1">
+                  <span>Epicenter Focal Coordinates</span>
+                  <span id="val-anom-coords" class="font-mono text-accent font-bold">50%, 50%</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-[10px] text-[var(--text-muted)]">X Position</span>
+                    <input type="range" id="input-anom-x" min="10" max="90" step="1" value="50">
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-[var(--text-muted)]">Y Position</span>
+                    <input type="range" id="input-anom-y" min="10" max="90" step="1" value="50">
+                  </div>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] mt-1">Tip: Click anywhere on the canvas to set focal point</p>
+              </div>
+
+              <!-- Influence Radius & Intensity -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Radius</span>
+                    <span id="val-anom-radius" class="font-mono text-accent font-bold">160px</span>
+                  </div>
+                  <input type="range" id="input-anom-radius" min="50" max="350" step="10" value="160">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Severity</span>
+                    <span id="val-anom-intensity" class="font-mono text-accent font-bold">65%</span>
+                  </div>
+                  <input type="range" id="input-anom-intensity" min="10" max="100" step="5" value="65">
+                </div>
+              </div>
+
+              <!-- Anomalous Shape Override (Focal) -->
+              <div id="anom-shape-box">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Focal Intruder Shape</label>
+                <div class="relative">
+                  <select id="anom-shape" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="triangle_eq">Equilateral Triangle</option>
+                    <option value="star4">4-Point Star</option>
+                    <option value="crescent">Crescent (Lúnula)</option>
+                    <option value="rhombus">Rhombus (Diamond)</option>
+                    <option value="superformula">Bio / Leaf Form</option>
+                    <option value="circle">Circle</option>
+                    <option value="cross">Cross (+)</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Options -->
+              <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Highlight with Accent Color</span>
+                  <input type="checkbox" id="check-anom-highlight" checked>
+                </label>
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Show Epicenter Reticle</span>
+                  <input type="checkbox" id="check-anom-reticle" checked>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <!-- 7. CONTRAST -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Contrast</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Difference as a visual device</div>
+          <!-- 7. CONTRAST (Chapter 9) -->
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Contrast</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Disparity, dominance and balance</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-contrast-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Contrast -->
+            <div id="accordion-contrast" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Contrast Dimension</label>
+                <div class="relative">
+                  <select id="contrast-dimension" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="scale">Fig. 59b: Contrast of Scale (Monolith vs Micro)</option>
+                    <option value="shape">Fig. 59a: Contrast of Shape (Morphological Clash)</option>
+                    <option value="direction">Fig. 59e: Contrast of Direction (Orthogonal vs Acute)</option>
+                    <option value="tone">Fig. 60b: Contrast of Tone (Solid vs Wireframe)</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Dominance Ratio -->
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                  <span>Dominance Ratio (Majority)</span>
+                  <span id="val-contrast-dominance" class="font-mono text-accent font-bold">80%</span>
+                </div>
+                <input type="range" id="input-contrast-dominance" min="60" max="95" step="5" value="80">
+              </div>
+
+              <!-- Scale Factor Slider (for scale dimension) -->
+              <div id="contrast-scale-box">
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                  <span>Contrast Scale Multiplier</span>
+                  <span id="val-contrast-scale" class="font-mono text-accent font-bold">2.2x</span>
+                </div>
+                <input type="range" id="input-contrast-scale" min="0.2" max="3.0" step="0.2" value="2.2">
+              </div>
+
+              <!-- Shape Clash (for shape dimension) -->
+              <div id="contrast-shape-box" class="hidden">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Clashing Minority Shape</label>
+                <div class="relative">
+                  <select id="contrast-shape" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="star4">4-Point Star</option>
+                    <option value="superformula">Bio / Leaf Form</option>
+                    <option value="crescent">Crescent (Lúnula)</option>
+                    <option value="triangle_eq">Triangle</option>
+                    <option value="rhombus">Rhombus (Diamond)</option>
+                    <option value="circle">Circle</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Clash Angle (for direction dimension) -->
+              <div id="contrast-angle-box" class="hidden">
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                  <span>Acute Clash Angle</span>
+                  <span id="val-contrast-angle" class="font-mono text-accent font-bold">45°</span>
+                </div>
+                <input type="range" id="input-contrast-angle" min="15" max="90" step="15" value="45">
+              </div>
+
+              <!-- Options -->
+              <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Accentuate Minority Elements</span>
+                  <input type="checkbox" id="check-contrast-highlight">
+                </label>
+              </div>
+            </div>
           </div>
 
           <!-- 8. CONCENTRATION -->

@@ -1069,8 +1069,26 @@ const defaultStudioState = {
       centerX: 0,
       centerY: 0
     },
-    anomaly: { enabled: false },
-    contrast: { enabled: false },
+    anomaly: {
+      enabled: false,
+      type: "focal", // focal, fracture, swell, tear
+      epicenterX: 0.5, // 0.1 to 0.9
+      epicenterY: 0.5, // 0.1 to 0.9
+      radius: 160, // 50 to 350
+      intensity: 65, // 10 to 100
+      anomalousShape: "triangle_eq",
+      highlightColor: true,
+      showReticle: true
+    },
+    contrast: {
+      enabled: false,
+      dimension: "scale", // scale, shape, direction, tone
+      dominanceRatio: 80, // % majority regular (60 to 95)
+      contrastShape: "star4", // shape for shape contrast
+      scaleFactor: 2.2, // scale multiplier for scale contrast
+      angle: 45, // clash angle for direction contrast
+      highlightContrast: false // highlight minority elements
+    },
     concentration: { enabled: false },
     texture: { enabled: false },
     space: { enabled: false }
@@ -1125,8 +1143,10 @@ class StudioEngine {
   }
 
   // Render the base unit form (Module) with interrelation operations
-  renderModule(ctx, sizeMultiplier = 1, fgColor = "#111111", bgColor = "#FAFAFA", customScaleA = null, customScaleB = null) {
-    const { formA, formB, interrelation, wireframe } = this.state;
+  renderModule(ctx, sizeMultiplier = 1, fgColor = "#111111", bgColor = "#FAFAFA", customScaleA = null, customScaleB = null, shapeOverrideA = null, wireframeOverride = null) {
+    const { formA, formB, interrelation } = this.state;
+    const wireframe = wireframeOverride !== null ? wireframeOverride : this.state.wireframe;
+    const shapeA = shapeOverrideA || formA.shape;
     const rA = (customScaleA ?? formA.scale) * sizeMultiplier;
     const rB = (customScaleB ?? formB.scale) * sizeMultiplier;
 
@@ -1138,7 +1158,7 @@ class StudioEngine {
       ctx.save();
       ctx.translate(ax, ay);
       ctx.rotate((formA.rotation * Math.PI) / 180);
-      this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
+      this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
       ctx.restore();
       return;
     }
@@ -1168,7 +1188,7 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
         ctx.restore();
 
         // Draw Form B (if overlapping, add fine outline separation for clarity)
@@ -1193,7 +1213,7 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
         ctx.restore();
 
         ctx.save();
@@ -1217,7 +1237,7 @@ class StudioEngine {
         offCtx.save();
         offCtx.translate(cx + ax, cy + ay);
         offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, formA.shape, rA, fgColor, wireframe);
+        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe);
         offCtx.restore();
 
         offCtx.save();
@@ -1244,7 +1264,7 @@ class StudioEngine {
         offCtx.save();
         offCtx.translate(cx + ax, cy + ay);
         offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, formA.shape, rA, fgColor, wireframe);
+        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe);
         offCtx.restore();
 
         offCtx.save();
@@ -1263,7 +1283,7 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
         ctx.restore();
 
         ctx.save();
@@ -1280,7 +1300,7 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formA.shape, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
         ctx.restore();
 
         ctx.save();
@@ -1346,6 +1366,8 @@ class StudioEngine {
     const struct = this.state.modifiers.structure;
     const sim = this.state.modifiers.similarity;
     const grad = this.state.modifiers.gradation;
+    const anom = this.state.modifiers.anomaly;
+    const contrast = this.state.modifiers.contrast;
 
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
@@ -1546,9 +1568,89 @@ class StudioEngine {
           }
         }
 
+        // Anomaly & Contrast Modifiers
+        let cellShapeA = null;
+        let cellWireframe = null;
+        let cellFg = fgColor;
+        let cellBg = bgColor;
+        let cellScaleMul = 1;
+
+        if (anom.enabled) {
+          const epiX = (anom.epicenterX ?? 0.5) * width;
+          const epiY = (anom.epicenterY ?? 0.5) * height;
+          const dist = Math.hypot(cx - epiX, cy - epiY);
+          const inZone = dist < anom.radius;
+          const factor = inZone ? (1 - dist / anom.radius) : 0;
+          const severity = (anom.intensity ?? 65) / 100;
+
+          if (anom.type === "focal") {
+            const focalRadius = Math.max(cW, cH) * 0.75;
+            if (dist < focalRadius) {
+              cellShapeA = anom.anomalousShape || "triangle_eq";
+              ctx.rotate((Math.PI / 4) * severity);
+              cellScaleMul *= (1 + 0.35 * severity);
+              if (anom.highlightColor) cellFg = palette.accent;
+            }
+          } else if (anom.type === "fracture") {
+            const corridor = anom.radius * 0.45;
+            if (Math.abs(cx - epiX) < corridor) {
+              const jag = Math.sin(cy * 0.08) * (18 * severity);
+              const shearY = (cy > epiY ? 1 : -1) * (36 * severity) + jag;
+              const shearX = (cx > epiX ? 1 : -1) * (10 * severity);
+              ctx.translate(shearX, shearY);
+              ctx.rotate((factor * severity * Math.PI) / 3.2);
+              if (factor > 0.4 && anom.highlightColor) cellFg = palette.accent;
+            }
+          } else if (anom.type === "swell") {
+            if (inZone) {
+              const angle = Math.atan2(cy - epiY, cx - epiX);
+              const push = Math.sin(factor * Math.PI) * (42 * severity);
+              ctx.translate(Math.cos(angle) * push, Math.sin(angle) * push);
+              const sFactor = 1 + factor * 0.55 * severity;
+              ctx.scale(sFactor, sFactor);
+              if (factor > 0.65 && anom.highlightColor) cellFg = palette.accent;
+            }
+          } else if (anom.type === "tear") {
+            if (factor > 0.6) {
+              // Disintegrated void
+              ctx.restore();
+              continue;
+            } else if (factor > 0.15) {
+              // Shattered debris
+              ctx.translate(pRand(51) * 26 * severity, pRand(52) * 26 * severity);
+              ctx.rotate(pRand(53) * Math.PI * severity);
+              const shrink = Math.max(0.15, 1 - factor * 0.85);
+              ctx.scale(shrink, shrink);
+              if (anom.highlightColor && factor > 0.3) cellFg = palette.accent;
+            }
+          }
+        }
+
+        if (contrast.enabled) {
+          const k = r * cols + c;
+          const hash = Math.abs(Math.sin(k * 137.5 + 43.1) * 10000) % 100;
+          const isMinority = hash >= (contrast.dominanceRatio ?? 80);
+          if (isMinority) {
+            if (contrast.dimension === "scale") {
+              const sFactor = contrast.scaleFactor ?? 2.2;
+              cellScaleMul *= sFactor;
+            } else if (contrast.dimension === "shape") {
+              cellShapeA = contrast.contrastShape || "star4";
+            } else if (contrast.dimension === "direction") {
+              const clashAngle = ((contrast.angle ?? 45) * Math.PI) / 180;
+              ctx.rotate(clashAngle);
+            } else if (contrast.dimension === "tone") {
+              cellWireframe = true;
+            }
+            if (contrast.highlightContrast) {
+              cellFg = palette.accent;
+            }
+          }
+        }
+
         const baseScale = Math.min(cW, cH) * 0.45;
-        const normScale = baseScale / 100;
-        this.renderModule(ctx, normScale, fgColor, bgColor);
+        const normScale = (baseScale / 100) * cellScaleMul;
+        this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe);
         ctx.restore();
       }
     }
@@ -1605,6 +1707,32 @@ class StudioEngine {
 
       ctx.restore();
     }
+
+    // Anomaly reticle guide overlay
+    if (anom.enabled && anom.showReticle) {
+      const epiX = (anom.epicenterX ?? 0.5) * width;
+      const epiY = (anom.epicenterY ?? 0.5) * height;
+      ctx.save();
+      ctx.strokeStyle = palette.accent;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+
+      // Influence radius boundary
+      ctx.beginPath();
+      ctx.arc(epiX, epiY, anom.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Precision target reticle
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(epiX, epiY, 6, 0, Math.PI * 2);
+      ctx.moveTo(epiX - 14, epiY);
+      ctx.lineTo(epiX + 14, epiY);
+      ctx.moveTo(epiX, epiY - 14);
+      ctx.lineTo(epiX, epiY + 14);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // Render the polar radiation layout (Chapter 7)
@@ -1612,6 +1740,8 @@ class StudioEngine {
     const rad = this.state.modifiers.radiation;
     const grad = this.state.modifiers.gradation;
     const sim = this.state.modifiers.similarity;
+    const anom = this.state.modifiers.anomaly;
+    const contrast = this.state.modifiers.contrast;
 
     const margin = 35;
     const usableW = width - margin * 2;
@@ -1714,9 +1844,88 @@ class StudioEngine {
             }
           }
 
+          // Anomaly & Contrast on radiation module
+          let cellShapeA = null;
+          let cellWireframe = null;
+          let cellFg = palette.fg;
+          let cellBg = palette.bg;
+          let cellScaleMul = 1;
+
+          if (anom.enabled) {
+            const epiX = (anom.epicenterX ?? 0.5) * width;
+            const epiY = (anom.epicenterY ?? 0.5) * height;
+            const dist = Math.hypot(x - epiX, y - epiY);
+            const inZone = dist < anom.radius;
+            const factor = inZone ? (1 - dist / anom.radius) : 0;
+            const severity = (anom.intensity ?? 65) / 100;
+
+            if (anom.type === "focal") {
+              const focalRadius = maxR * 0.28;
+              if (dist < focalRadius) {
+                cellShapeA = anom.anomalousShape || "triangle_eq";
+                ctx.rotate((Math.PI / 4) * severity);
+                cellScaleMul *= (1 + 0.35 * severity);
+                if (anom.highlightColor) cellFg = palette.accent;
+              }
+            } else if (anom.type === "fracture") {
+              const corridor = anom.radius * 0.45;
+              if (Math.abs(x - epiX) < corridor) {
+                const jag = Math.sin(y * 0.08) * (18 * severity);
+                const shearY = (y > epiY ? 1 : -1) * (36 * severity) + jag;
+                const shearX = (x > epiX ? 1 : -1) * (10 * severity);
+                ctx.translate(shearX, shearY);
+                ctx.rotate((factor * severity * Math.PI) / 3.2);
+                if (factor > 0.4 && anom.highlightColor) cellFg = palette.accent;
+              }
+            } else if (anom.type === "swell") {
+              if (inZone) {
+                const angleToEpi = Math.atan2(y - epiY, x - epiX);
+                const push = Math.sin(factor * Math.PI) * (42 * severity);
+                ctx.translate(Math.cos(angleToEpi) * push, Math.sin(angleToEpi) * push);
+                const sFactor = 1 + factor * 0.55 * severity;
+                ctx.scale(sFactor, sFactor);
+                if (factor > 0.65 && anom.highlightColor) cellFg = palette.accent;
+              }
+            } else if (anom.type === "tear") {
+              if (factor > 0.6) {
+                ctx.restore();
+                continue;
+              } else if (factor > 0.15) {
+                const rRand = ((seed * 997 + i * 31 + j * 7) % 100) / 100;
+                ctx.translate((rRand - 0.5) * 26 * severity, (1 - rRand - 0.5) * 26 * severity);
+                ctx.rotate(rRand * Math.PI * severity);
+                const shrink = Math.max(0.15, 1 - factor * 0.85);
+                ctx.scale(shrink, shrink);
+                if (anom.highlightColor && factor > 0.3) cellFg = palette.accent;
+              }
+            }
+          }
+
+          if (contrast.enabled) {
+            const k = centerIdx * 1000 + i * rays + j;
+            const hash = Math.abs(Math.sin(k * 137.5 + 43.1) * 10000) % 100;
+            const isMinority = hash >= (contrast.dominanceRatio ?? 80);
+            if (isMinority) {
+              if (contrast.dimension === "scale") {
+                const sFactor = contrast.scaleFactor ?? 2.2;
+                cellScaleMul *= sFactor;
+              } else if (contrast.dimension === "shape") {
+                cellShapeA = contrast.contrastShape || "star4";
+              } else if (contrast.dimension === "direction") {
+                const clashAngle = ((contrast.angle ?? 45) * Math.PI) / 180;
+                ctx.rotate(clashAngle);
+              } else if (contrast.dimension === "tone") {
+                cellWireframe = true;
+              }
+              if (contrast.highlightContrast) {
+                cellFg = palette.accent;
+              }
+            }
+          }
+
           // Natural centrifugal growth scale: outer modules larger, inner smaller
-          const growthScale = 0.28 + (i / rings) * 0.42;
-          this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), palette.fg, palette.bg);
+          const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul;
+          this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), cellFg, cellBg, null, null, cellShapeA, cellWireframe);
           ctx.restore();
         }
       }
@@ -1762,6 +1971,32 @@ class StudioEngine {
         }
       });
 
+      ctx.restore();
+    }
+
+    // Anomaly reticle guide overlay on radiation
+    if (anom.enabled && anom.showReticle) {
+      const epiX = (anom.epicenterX ?? 0.5) * width;
+      const epiY = (anom.epicenterY ?? 0.5) * height;
+      ctx.save();
+      ctx.strokeStyle = palette.accent;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+
+      // Influence radius boundary
+      ctx.beginPath();
+      ctx.arc(epiX, epiY, anom.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Precision target reticle
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(epiX, epiY, 6, 0, Math.PI * 2);
+      ctx.moveTo(epiX - 14, epiY);
+      ctx.lineTo(epiX + 14, epiY);
+      ctx.moveTo(epiX, epiY - 14);
+      ctx.lineTo(epiX, epiY + 14);
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -1823,6 +2058,10 @@ class StudioEngine {
       ctx.save();
       ctx.translate(width / 2, height / 2);
 
+      let modFg = fgColor;
+      let shapeOverrideA = null;
+      let wireframeOverride = null;
+
       // If gradation is active on single module, apply rotation or depth
       const grad = this.state.modifiers.gradation;
       if (grad.enabled) {
@@ -1857,7 +2096,43 @@ class StudioEngine {
         }
       }
 
-      this.renderModule(ctx, 1.25, fgColor, bgColor);
+      // If anomaly is active on single module
+      const anom = this.state.modifiers.anomaly;
+      if (anom.enabled) {
+        if (anom.type === "focal") {
+          shapeOverrideA = anom.anomalousShape || "triangle_eq";
+          if (anom.highlightColor) modFg = palette.accent;
+          ctx.rotate(0.35);
+        } else if (anom.type === "fracture") {
+          ctx.rotate(0.45);
+          ctx.scale(1.25, 0.75);
+          if (anom.highlightColor) modFg = palette.accent;
+        } else if (anom.type === "swell") {
+          ctx.scale(1.4, 1.4);
+        } else if (anom.type === "tear") {
+          ctx.scale(0.55, 0.55);
+          ctx.rotate(0.6);
+          if (anom.highlightColor) modFg = palette.accent;
+        }
+      }
+
+      // If contrast is active on single module
+      const contrast = this.state.modifiers.contrast;
+      if (contrast.enabled) {
+        if (contrast.dimension === "shape") {
+          shapeOverrideA = contrast.contrastShape || "star4";
+        } else if (contrast.dimension === "scale") {
+          const s = contrast.scaleFactor ?? 2.2;
+          ctx.scale(s, s);
+        } else if (contrast.dimension === "direction") {
+          ctx.rotate(((contrast.angle ?? 45) * Math.PI) / 180);
+        } else if (contrast.dimension === "tone") {
+          wireframeOverride = true;
+        }
+        if (contrast.highlightContrast) modFg = palette.accent;
+      }
+
+      this.renderModule(ctx, 1.25, modFg, bgColor, null, null, shapeOverrideA, wireframeOverride);
       ctx.restore();
     }
 
@@ -4690,6 +4965,178 @@ class WongApp {
       this.renderStudio();
     });
 
+    // ------------------------------------------------------------
+    // Anomaly Modifier (Chapter 8)
+    // ------------------------------------------------------------
+    const anomToggle = document.getElementById("mod-anomaly-toggle");
+    const anomAccordion = document.getElementById("accordion-anomaly");
+
+    anomToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.anomaly.enabled = isChecked;
+      if (isChecked) {
+        anomAccordion?.classList.remove("hidden");
+        this.showToast("Anomaly Active: Irregularity Focal Tension");
+      } else {
+        anomAccordion?.classList.add("hidden");
+        this.showToast("Anomaly Deactivated: Regularity Restored");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("anom-type")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.anomaly.type = val;
+      const shapeBox = document.getElementById("anom-shape-box");
+      if (shapeBox) {
+        if (val === "focal") shapeBox.classList.remove("hidden");
+        else shapeBox.classList.add("hidden");
+      }
+      this.renderStudio();
+    });
+
+    const anomX = document.getElementById("input-anom-x");
+    const anomY = document.getElementById("input-anom-y");
+    const valAnomCoords = document.getElementById("val-anom-coords");
+
+    const updateAnomCoordsUI = () => {
+      const x = Math.round(this.studioEngine.state.modifiers.anomaly.epicenterX * 100);
+      const y = Math.round(this.studioEngine.state.modifiers.anomaly.epicenterY * 100);
+      if (anomX) anomX.value = x;
+      if (anomY) anomY.value = y;
+      if (valAnomCoords) valAnomCoords.textContent = `${x}%, ${y}%`;
+    };
+
+    anomX?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.anomaly.epicenterX = parseInt(e.target.value, 10) / 100;
+      updateAnomCoordsUI();
+      this.renderStudio();
+    });
+
+    anomY?.addEventListener("input", (e) => {
+      this.studioEngine.state.modifiers.anomaly.epicenterY = parseInt(e.target.value, 10) / 100;
+      updateAnomCoordsUI();
+      this.renderStudio();
+    });
+
+    const anomRadius = document.getElementById("input-anom-radius");
+    const valAnomRadius = document.getElementById("val-anom-radius");
+    anomRadius?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.anomaly.radius = v;
+      if (valAnomRadius) valAnomRadius.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    const anomIntensity = document.getElementById("input-anom-intensity");
+    const valAnomIntensity = document.getElementById("val-anom-intensity");
+    anomIntensity?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.anomaly.intensity = v;
+      if (valAnomIntensity) valAnomIntensity.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    document.getElementById("anom-shape")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.anomaly.anomalousShape = e.target.value;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-anom-highlight")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.anomaly.highlightColor = e.target.checked;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-anom-reticle")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.anomaly.showReticle = e.target.checked;
+      this.renderStudio();
+    });
+
+    // Interactive canvas click to reposition Anomaly Epicenter
+    this.studioCanvas?.addEventListener("click", (e) => {
+      if (this.studioEngine.state.modifiers.anomaly.enabled) {
+        const rect = this.studioCanvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) / rect.width;
+        const clickY = (e.clientY - rect.top) / rect.height;
+        this.studioEngine.state.modifiers.anomaly.epicenterX = Math.max(0.05, Math.min(0.95, clickX));
+        this.studioEngine.state.modifiers.anomaly.epicenterY = Math.max(0.05, Math.min(0.95, clickY));
+        updateAnomCoordsUI();
+        this.renderStudio();
+      }
+    });
+
+    // ------------------------------------------------------------
+    // Contrast Modifier (Chapter 9)
+    // ------------------------------------------------------------
+    const contrastToggle = document.getElementById("mod-contrast-toggle");
+    const contrastAccordion = document.getElementById("accordion-contrast");
+
+    contrastToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.contrast.enabled = isChecked;
+      if (isChecked) {
+        contrastAccordion?.classList.remove("hidden");
+        this.showToast("Contrast Active: Visual Disparity & Dominance");
+      } else {
+        contrastAccordion?.classList.add("hidden");
+        this.showToast("Contrast Deactivated");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("contrast-dimension")?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      this.studioEngine.state.modifiers.contrast.dimension = val;
+      const scaleBox = document.getElementById("contrast-scale-box");
+      const shapeBox = document.getElementById("contrast-shape-box");
+      const angleBox = document.getElementById("contrast-angle-box");
+
+      if (scaleBox) scaleBox.classList.toggle("hidden", val !== "scale");
+      if (shapeBox) shapeBox.classList.toggle("hidden", val !== "shape");
+      if (angleBox) angleBox.classList.toggle("hidden", val !== "direction");
+
+      this.renderStudio();
+    });
+
+    const contrastDominance = document.getElementById("input-contrast-dominance");
+    const valContrastDominance = document.getElementById("val-contrast-dominance");
+    contrastDominance?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.contrast.dominanceRatio = v;
+      if (valContrastDominance) valContrastDominance.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    const contrastScale = document.getElementById("input-contrast-scale");
+    const valContrastScale = document.getElementById("val-contrast-scale");
+    contrastScale?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      this.studioEngine.state.modifiers.contrast.scaleFactor = v;
+      if (valContrastScale) valContrastScale.textContent = `${v.toFixed(1)}x`;
+      this.renderStudio();
+    });
+
+    document.getElementById("contrast-shape")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.contrast.contrastShape = e.target.value;
+      this.renderStudio();
+    });
+
+    const contrastAngle = document.getElementById("input-contrast-angle");
+    const valContrastAngle = document.getElementById("val-contrast-angle");
+    contrastAngle?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.contrast.angle = v;
+      if (valContrastAngle) valContrastAngle.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-contrast-highlight")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.contrast.highlightContrast = e.target.checked;
+      this.renderStudio();
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -4856,6 +5303,61 @@ class WongApp {
       if (s.modifiers.radiation.scheme === "spiral") twistBox.classList.remove("opacity-40");
       else twistBox.classList.add("opacity-40");
     }
+
+    // Anomaly sync
+    const anomToggle = document.getElementById("mod-anomaly-toggle");
+    if (anomToggle) anomToggle.checked = s.modifiers.anomaly.enabled;
+    const anomAccordion = document.getElementById("accordion-anomaly");
+    if (anomAccordion) {
+      if (s.modifiers.anomaly.enabled) anomAccordion.classList.remove("hidden");
+      else anomAccordion.classList.add("hidden");
+    }
+    setVal("anom-type", s.modifiers.anomaly.type);
+    const shapeBox = document.getElementById("anom-shape-box");
+    if (shapeBox) {
+      if (s.modifiers.anomaly.type === "focal") shapeBox.classList.remove("hidden");
+      else shapeBox.classList.add("hidden");
+    }
+    const xPct = Math.round((s.modifiers.anomaly.epicenterX ?? 0.5) * 100);
+    const yPct = Math.round((s.modifiers.anomaly.epicenterY ?? 0.5) * 100);
+    setVal("input-anom-x", xPct);
+    setVal("input-anom-y", yPct);
+    setText("val-anom-coords", `${xPct}%, ${yPct}%`);
+    setVal("input-anom-radius", s.modifiers.anomaly.radius);
+    setText("val-anom-radius", `${s.modifiers.anomaly.radius}px`);
+    setVal("input-anom-intensity", s.modifiers.anomaly.intensity);
+    setText("val-anom-intensity", `${s.modifiers.anomaly.intensity}%`);
+    setVal("anom-shape", s.modifiers.anomaly.anomalousShape);
+    const checkAnomHl = document.getElementById("check-anom-highlight");
+    if (checkAnomHl) checkAnomHl.checked = s.modifiers.anomaly.highlightColor;
+    const checkAnomRet = document.getElementById("check-anom-reticle");
+    if (checkAnomRet) checkAnomRet.checked = s.modifiers.anomaly.showReticle;
+
+    // Contrast sync
+    const contrastToggle = document.getElementById("mod-contrast-toggle");
+    if (contrastToggle) contrastToggle.checked = s.modifiers.contrast.enabled;
+    const contrastAccordion = document.getElementById("accordion-contrast");
+    if (contrastAccordion) {
+      if (s.modifiers.contrast.enabled) contrastAccordion.classList.remove("hidden");
+      else contrastAccordion.classList.add("hidden");
+    }
+    setVal("contrast-dimension", s.modifiers.contrast.dimension);
+    const scaleBox = document.getElementById("contrast-scale-box");
+    const cShapeBox = document.getElementById("contrast-shape-box");
+    const angleBox = document.getElementById("contrast-angle-box");
+    if (scaleBox) scaleBox.classList.toggle("hidden", s.modifiers.contrast.dimension !== "scale");
+    if (cShapeBox) cShapeBox.classList.toggle("hidden", s.modifiers.contrast.dimension !== "shape");
+    if (angleBox) angleBox.classList.toggle("hidden", s.modifiers.contrast.dimension !== "direction");
+
+    setVal("input-contrast-dominance", s.modifiers.contrast.dominanceRatio);
+    setText("val-contrast-dominance", `${s.modifiers.contrast.dominanceRatio}%`);
+    setVal("input-contrast-scale", s.modifiers.contrast.scaleFactor);
+    setText("val-contrast-scale", `${s.modifiers.contrast.scaleFactor.toFixed(1)}x`);
+    setVal("contrast-shape", s.modifiers.contrast.contrastShape);
+    setVal("input-contrast-angle", s.modifiers.contrast.angle);
+    setText("val-contrast-angle", `${s.modifiers.contrast.angle}°`);
+    const checkContrastHl = document.getElementById("check-contrast-highlight");
+    if (checkContrastHl) checkContrastHl.checked = s.modifiers.contrast.highlightContrast;
 
     this.initStudioShapePickers();
     this.updateStudioColophon();
