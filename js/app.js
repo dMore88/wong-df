@@ -393,27 +393,11 @@ class WongApp {
         }
       } else {
         repAccordion?.classList.add("hidden");
-        // If Radiation is also off, no grid exists! Deactivate Structure & population modifiers
-        if (!this.studioEngine.state.modifiers.radiation.enabled) {
-          const gridDeps = ["structure", "similarity", "gradation", "anomaly", "contrast", "concentration"];
-          let deactivatedCount = 0;
-          for (const depKey of gridDeps) {
-            if (this.studioEngine.state.modifiers[depKey]?.enabled) {
-              this.setModifierEnabled(depKey, false);
-              deactivatedCount++;
-            }
-          }
-          if (deactivatedCount > 0) {
-            this.showToast("Repetition deactivated: dependent grid modifiers turned off (single module mode).", 4500);
-          } else {
-            this.showToast("Repetition Modifier Deactivated");
-          }
-        } else {
-          if (this.studioEngine.state.modifiers.structure.enabled) {
-            this.setModifierEnabled("structure", false);
-          }
-          this.showToast("Repetition Modifier Deactivated");
+        // Structure cannot exist without Repetition grid
+        if (this.studioEngine.state.modifiers.structure.enabled) {
+          this.setModifierEnabled("structure", false);
         }
+        this.showToast("Repetition Modifier Deactivated");
       }
       this.onModifierStateChanged();
     });
@@ -543,10 +527,7 @@ class WongApp {
       this.studioEngine.state.modifiers.similarity.enabled = isChecked;
       if (isChecked) {
         simAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Similarity");
-        if (!autoActivated) {
-          this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
-        }
+        this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
       } else {
         simAccordion?.classList.add("hidden");
         this.showToast("Similarity Modifier Deactivated");
@@ -594,10 +575,7 @@ class WongApp {
       this.studioEngine.state.modifiers.gradation.enabled = isChecked;
       if (isChecked) {
         gradAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Gradation");
-        if (!autoActivated) {
-          this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
-        }
+        this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
       } else {
         gradAccordion?.classList.add("hidden");
         this.showToast("Gradation Modifier Deactivated");
@@ -661,24 +639,7 @@ class WongApp {
         }
       } else {
         radAccordion?.classList.add("hidden");
-        // If Repetition is also off, no grid exists! Deactivate grid-dependent modifiers
-        if (!this.studioEngine.state.modifiers.repetition.enabled) {
-          const gridDeps = ["similarity", "gradation", "anomaly", "contrast", "concentration"];
-          let deactivatedCount = 0;
-          for (const depKey of gridDeps) {
-            if (this.studioEngine.state.modifiers[depKey]?.enabled) {
-              this.setModifierEnabled(depKey, false);
-              deactivatedCount++;
-            }
-          }
-          if (deactivatedCount > 0) {
-            this.showToast("Radiation deactivated: dependent grid modifiers turned off (single module mode).", 4500);
-          } else {
-            this.showToast("Radiation Deactivated: Reverted to Base Study");
-          }
-        } else {
-          this.showToast("Radiation Deactivated: Reverted to Repetition Cartesian grid.");
-        }
+        this.showToast("Radiation Deactivated");
       }
       this.onModifierStateChanged();
     });
@@ -742,10 +703,7 @@ class WongApp {
       this.studioEngine.state.modifiers.anomaly.enabled = isChecked;
       if (isChecked) {
         anomAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Anomaly");
-        if (!autoActivated) {
-          this.showToast("Anomaly Active: Irregularity Focal Tension");
-        }
+        this.showToast("Anomaly Active: Irregularity Focal Tension");
       } else {
         anomAccordion?.classList.add("hidden");
         this.showToast("Anomaly Deactivated: Regularity Restored");
@@ -865,10 +823,7 @@ class WongApp {
       this.studioEngine.state.modifiers.contrast.enabled = isChecked;
       if (isChecked) {
         contrastAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Contrast");
-        if (!autoActivated) {
-          this.showToast("Contrast Active: Visual Disparity & Dominance");
-        }
+        this.showToast("Contrast Active: Visual Disparity & Dominance");
       } else {
         contrastAccordion?.classList.add("hidden");
         this.showToast("Contrast Deactivated");
@@ -938,10 +893,7 @@ class WongApp {
       this.studioEngine.state.modifiers.concentration.enabled = isChecked;
       if (isChecked) {
         concAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Concentration");
-        if (!autoActivated) {
-          this.showToast("Concentration Active: Gravitational Field & Density");
-        }
+        this.showToast("Concentration Active: Gravitational Field & Density");
       } else {
         concAccordion?.classList.add("hidden");
         this.showToast("Concentration Deactivated");
@@ -1504,16 +1456,6 @@ class WongApp {
       if (enabled) accordionEl.classList.remove("hidden");
       else accordionEl.classList.add("hidden");
     }
-  }
-
-  ensureGridActive(callerName) {
-    const s = this.studioEngine.state;
-    if (!s.modifiers.repetition.enabled && !s.modifiers.radiation.enabled) {
-      this.setModifierEnabled("repetition", true);
-      this.showToast(`${callerName} operates on a field of modules: Repetition activated automatically.`, 4000);
-      return true;
-    }
-    return false;
   }
 
   onModifierStateChanged() {

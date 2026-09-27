@@ -2487,7 +2487,7 @@ class StudioEngine {
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
 
-    const margin = 40;
+    const margin = Math.max(20, Math.min(width, height) * 0.05);
     const usableW = width - margin * 2;
     const usableH = height - margin * 2;
 
@@ -2547,10 +2547,10 @@ class StudioEngine {
       }
     }
 
-    // Wrap in outer bounding clip so shapes never bleed outside grid canvas
+    // Wrap in outer bounding clip so shapes never bleed outside canvas
     ctx.save();
     ctx.beginPath();
-    ctx.rect(margin, margin, usableW, usableH);
+    ctx.rect(2, 2, width - 4, height - 4);
     ctx.clip();
 
     const seed = sim.seed || 42;
@@ -2661,6 +2661,11 @@ class StudioEngine {
             }
           }
         }
+
+        // Soft damping to ensure displaced module centers remain safely within canvas
+        const safePad = Math.max(14, Math.min(cW, cH) * 0.35);
+        cx = Math.max(safePad, Math.min(width - safePad, cx));
+        cy = Math.max(safePad, Math.min(height - safePad, cy));
 
         ctx.save();
 
@@ -2941,10 +2946,11 @@ class StudioEngine {
     const contrast = this.state.modifiers.contrast;
     const conc = this.state.modifiers.concentration;
 
-    const margin = 35;
+    const margin = Math.max(20, Math.min(width, height) * 0.05);
     const usableW = width - margin * 2;
     const usableH = height - margin * 2;
-    const maxR = Math.min(usableW, usableH) / 2;
+    const isMultiCenter = rad.scheme === "multi_center";
+    const maxR = Math.min(usableW, usableH) * (isMultiCenter ? 0.32 : 0.42);
 
     const cx = width / 2 + (rad.centerX || 0);
     const cy = height / 2 + (rad.centerY || 0);
@@ -2954,17 +2960,17 @@ class StudioEngine {
     const twistRad = ((rad.spiralTwist || 0) * Math.PI) / 180;
 
     // Centers list (if multi_center, we have two focal centers creating Moiré)
-    const centers = rad.scheme === "multi_center"
+    const centers = isMultiCenter
       ? [
           { x: cx - maxR * 0.35, y: cy },
           { x: cx + maxR * 0.35, y: cy }
         ]
       : [{ x: cx, y: cy }];
 
-    // Clip to usable area
+    // Clip to canvas area
     ctx.save();
     ctx.beginPath();
-    ctx.rect(margin, margin, usableW, usableH);
+    ctx.rect(2, 2, width - 4, height - 4);
     ctx.clip();
 
     const seed = sim.seed || 42;
@@ -3056,8 +3062,10 @@ class StudioEngine {
             }
           }
 
-          // Check bounds
-          if (posX < margin || posX > width - margin || posY < margin || posY > height - margin) continue;
+          // Soft edge bounding so modules stay comfortably within the canvas
+          const safePad = Math.max(12, margin * 0.4);
+          posX = Math.max(safePad, Math.min(width - safePad, posX));
+          posY = Math.max(safePad, Math.min(height - safePad, posY));
 
           ctx.save();
           ctx.translate(posX, posY);
@@ -3198,9 +3206,10 @@ class StudioEngine {
           }
 
           // Natural centrifugal growth scale: outer modules larger, inner smaller
-          const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul * concScaleMul;
+          const growthScale = (0.24 + (i / rings) * 0.38) * cellScaleMul * concScaleMul;
           const isAlt = (i + j) % 2 === 1;
-          this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
+          const radScaleMul = isMultiCenter ? 0.48 : 0.68;
+          this.renderModule(ctx, growthScale * radScaleMul, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
           ctx.restore();
         }
       }
@@ -3342,7 +3351,8 @@ class StudioEngine {
       // Single Module Study in Center (Pure Form A & Form B Base Unit)
       ctx.save();
       ctx.translate(width / 2, height / 2);
-      this.renderModule(ctx, 1.25, fgColor, bgColor);
+      const aspectScale = Math.min(1.0, Math.min(width, height) / 600);
+      this.renderModule(ctx, 1.25 * aspectScale, fgColor, bgColor);
       ctx.restore();
     }
 
@@ -6156,27 +6166,11 @@ class WongApp {
         }
       } else {
         repAccordion?.classList.add("hidden");
-        // If Radiation is also off, no grid exists! Deactivate Structure & population modifiers
-        if (!this.studioEngine.state.modifiers.radiation.enabled) {
-          const gridDeps = ["structure", "similarity", "gradation", "anomaly", "contrast", "concentration"];
-          let deactivatedCount = 0;
-          for (const depKey of gridDeps) {
-            if (this.studioEngine.state.modifiers[depKey]?.enabled) {
-              this.setModifierEnabled(depKey, false);
-              deactivatedCount++;
-            }
-          }
-          if (deactivatedCount > 0) {
-            this.showToast("Repetition deactivated: dependent grid modifiers turned off (single module mode).", 4500);
-          } else {
-            this.showToast("Repetition Modifier Deactivated");
-          }
-        } else {
-          if (this.studioEngine.state.modifiers.structure.enabled) {
-            this.setModifierEnabled("structure", false);
-          }
-          this.showToast("Repetition Modifier Deactivated");
+        // Structure cannot exist without Repetition grid
+        if (this.studioEngine.state.modifiers.structure.enabled) {
+          this.setModifierEnabled("structure", false);
         }
+        this.showToast("Repetition Modifier Deactivated");
       }
       this.onModifierStateChanged();
     });
@@ -6306,10 +6300,7 @@ class WongApp {
       this.studioEngine.state.modifiers.similarity.enabled = isChecked;
       if (isChecked) {
         simAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Similarity");
-        if (!autoActivated) {
-          this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
-        }
+        this.showToast("Similarity Modifier Activated (Kinship Fluctuation)");
       } else {
         simAccordion?.classList.add("hidden");
         this.showToast("Similarity Modifier Deactivated");
@@ -6357,10 +6348,7 @@ class WongApp {
       this.studioEngine.state.modifiers.gradation.enabled = isChecked;
       if (isChecked) {
         gradAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Gradation");
-        if (!autoActivated) {
-          this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
-        }
+        this.showToast("Gradation Modifier Activated (Progressive Dynamics)");
       } else {
         gradAccordion?.classList.add("hidden");
         this.showToast("Gradation Modifier Deactivated");
@@ -6424,24 +6412,7 @@ class WongApp {
         }
       } else {
         radAccordion?.classList.add("hidden");
-        // If Repetition is also off, no grid exists! Deactivate grid-dependent modifiers
-        if (!this.studioEngine.state.modifiers.repetition.enabled) {
-          const gridDeps = ["similarity", "gradation", "anomaly", "contrast", "concentration"];
-          let deactivatedCount = 0;
-          for (const depKey of gridDeps) {
-            if (this.studioEngine.state.modifiers[depKey]?.enabled) {
-              this.setModifierEnabled(depKey, false);
-              deactivatedCount++;
-            }
-          }
-          if (deactivatedCount > 0) {
-            this.showToast("Radiation deactivated: dependent grid modifiers turned off (single module mode).", 4500);
-          } else {
-            this.showToast("Radiation Deactivated: Reverted to Base Study");
-          }
-        } else {
-          this.showToast("Radiation Deactivated: Reverted to Repetition Cartesian grid.");
-        }
+        this.showToast("Radiation Deactivated");
       }
       this.onModifierStateChanged();
     });
@@ -6505,10 +6476,7 @@ class WongApp {
       this.studioEngine.state.modifiers.anomaly.enabled = isChecked;
       if (isChecked) {
         anomAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Anomaly");
-        if (!autoActivated) {
-          this.showToast("Anomaly Active: Irregularity Focal Tension");
-        }
+        this.showToast("Anomaly Active: Irregularity Focal Tension");
       } else {
         anomAccordion?.classList.add("hidden");
         this.showToast("Anomaly Deactivated: Regularity Restored");
@@ -6628,10 +6596,7 @@ class WongApp {
       this.studioEngine.state.modifiers.contrast.enabled = isChecked;
       if (isChecked) {
         contrastAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Contrast");
-        if (!autoActivated) {
-          this.showToast("Contrast Active: Visual Disparity & Dominance");
-        }
+        this.showToast("Contrast Active: Visual Disparity & Dominance");
       } else {
         contrastAccordion?.classList.add("hidden");
         this.showToast("Contrast Deactivated");
@@ -6701,10 +6666,7 @@ class WongApp {
       this.studioEngine.state.modifiers.concentration.enabled = isChecked;
       if (isChecked) {
         concAccordion?.classList.remove("hidden");
-        const autoActivated = this.ensureGridActive("Concentration");
-        if (!autoActivated) {
-          this.showToast("Concentration Active: Gravitational Field & Density");
-        }
+        this.showToast("Concentration Active: Gravitational Field & Density");
       } else {
         concAccordion?.classList.add("hidden");
         this.showToast("Concentration Deactivated");
@@ -7267,16 +7229,6 @@ class WongApp {
       if (enabled) accordionEl.classList.remove("hidden");
       else accordionEl.classList.add("hidden");
     }
-  }
-
-  ensureGridActive(callerName) {
-    const s = this.studioEngine.state;
-    if (!s.modifiers.repetition.enabled && !s.modifiers.radiation.enabled) {
-      this.setModifierEnabled("repetition", true);
-      this.showToast(`${callerName} operates on a field of modules: Repetition activated automatically.`, 4000);
-      return true;
-    }
-    return false;
   }
 
   onModifierStateChanged() {
