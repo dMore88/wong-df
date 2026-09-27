@@ -80,6 +80,10 @@ def build():
   if (typeof window !== 'undefined') {{
     window.StudioEngine = StudioEngine;
     window.WongApp = WongApp;
+    window.CanvasUtils = CanvasUtils;
+    window.Shapes = Shapes;
+    window.realWorldCases = realWorldCases;
+    window.chaptersContent = chaptersContent;
   }}
 }})();
 """
