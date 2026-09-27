@@ -385,11 +385,7 @@ class WongApp {
       if (isChecked) {
         repAccordion?.classList.remove("hidden");
         if (this.studioEngine.state.modifiers.radiation.enabled) {
-          this.studioEngine.state.modifiers.radiation.enabled = false;
-          const radToggleEl = document.getElementById("mod-radiation-toggle");
-          if (radToggleEl) radToggleEl.checked = false;
-          document.getElementById("accordion-radiation")?.classList.add("hidden");
-          this.showToast("Repetition active: switched to Cartesian grid (Radiation deactivated).", 4000);
+          this.showToast("Repetition active. Note: Radiation polar grid has spatial precedence on canvas.", 4200);
         } else {
           this.showToast("Repetition Modifier Activated (Cartesian Matrix)");
         }
@@ -453,26 +449,11 @@ class WongApp {
       this.studioEngine.state.modifiers.structure.enabled = isChecked;
       if (isChecked) {
         structAccordion?.classList.remove("hidden");
-        const hasRad = this.studioEngine.state.modifiers.radiation.enabled;
-        if (hasRad) {
-          this.studioEngine.state.modifiers.radiation.enabled = false;
-          const radToggleEl = document.getElementById("mod-radiation-toggle");
-          if (radToggleEl) radToggleEl.checked = false;
-          document.getElementById("accordion-radiation")?.classList.add("hidden");
-
-          this.studioEngine.state.modifiers.repetition.enabled = true;
-          const repToggleEl = document.getElementById("mod-repetition-toggle");
-          if (repToggleEl) repToggleEl.checked = true;
-          document.getElementById("accordion-repetition")?.classList.remove("hidden");
-
-          this.showToast("Structure active: switched to Cartesian grid (Radiation deactivated).", 4000);
+        const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
+        if (!hasRep) {
+          this.showToast("Structure modulates grid intervals. Activate 'Repetition' to visualize its effect on the composition.", 4500);
         } else {
-          const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
-          if (!hasRep) {
-            this.showToast("Structure modulates grid intervals. Activate 'Repetition' to visualize its effect on the composition.", 4200);
-          } else {
-            this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
-          }
+          this.showToast("Structure Modifier Activated (Dual Rhythmic Intervals)");
         }
       } else {
         structAccordion?.classList.add("hidden");
@@ -645,29 +626,20 @@ class WongApp {
       this.studioEngine.state.modifiers.radiation.enabled = isChecked;
       if (isChecked) {
         radAccordion?.classList.remove("hidden");
-        const hadCartesian = this.studioEngine.state.modifiers.repetition.enabled || this.studioEngine.state.modifiers.structure.enabled;
-
-        if (this.studioEngine.state.modifiers.repetition.enabled) {
-          this.studioEngine.state.modifiers.repetition.enabled = false;
-          const repToggleEl = document.getElementById("mod-repetition-toggle");
-          if (repToggleEl) repToggleEl.checked = false;
-          document.getElementById("accordion-repetition")?.classList.add("hidden");
-        }
-        if (this.studioEngine.state.modifiers.structure.enabled) {
-          this.studioEngine.state.modifiers.structure.enabled = false;
-          const structToggleEl = document.getElementById("mod-structure-toggle");
-          if (structToggleEl) structToggleEl.checked = false;
-          document.getElementById("accordion-structure")?.classList.add("hidden");
-        }
-
+        const hadCartesian = this.studioEngine.state.modifiers.repetition.enabled;
         if (hadCartesian) {
-          this.showToast("Radiation active: switched to polar system (Repetition and Structure deactivated).", 4000);
+          this.showToast("Radiation active: Polar structural framework prevails over Cartesian grid.", 4200);
         } else {
           this.showToast("Radiation Active: Polar Structural Framework");
         }
       } else {
         radAccordion?.classList.add("hidden");
-        this.showToast("Radiation Deactivated: Reverted to Base Study");
+        const hasRep = this.studioEngine.state.modifiers.repetition.enabled;
+        if (hasRep) {
+          this.showToast("Radiation Deactivated: Reverted to Repetition Cartesian grid.");
+        } else {
+          this.showToast("Radiation Deactivated: Reverted to Base Study");
+        }
       }
       this.onModifierStateChanged();
     });
@@ -1425,7 +1397,7 @@ class WongApp {
 
     const warnStruct = document.getElementById("dep-warning-structure");
     if (warnStruct) {
-      if (!hasRep) {
+      if (s.modifiers.structure.enabled && !hasRep) {
         warnStruct.classList.remove("hidden");
       } else {
         warnStruct.classList.add("hidden");
@@ -1434,7 +1406,7 @@ class WongApp {
 
     const warnSim = document.getElementById("dep-warning-similarity");
     if (warnSim) {
-      if (!hasGrid) {
+      if (s.modifiers.similarity.enabled && !hasGrid) {
         warnSim.classList.remove("hidden");
       } else {
         warnSim.classList.add("hidden");
@@ -1443,7 +1415,7 @@ class WongApp {
 
     const warnGrad = document.getElementById("dep-warning-gradation");
     if (warnGrad) {
-      if (!hasGrid) {
+      if (s.modifiers.gradation.enabled && !hasGrid) {
         warnGrad.classList.remove("hidden");
       } else {
         warnGrad.classList.add("hidden");
@@ -1452,7 +1424,7 @@ class WongApp {
 
     const warnAnom = document.getElementById("dep-warning-anomaly");
     if (warnAnom) {
-      if (!hasGrid) {
+      if (s.modifiers.anomaly.enabled && !hasGrid) {
         warnAnom.classList.remove("hidden");
       } else {
         warnAnom.classList.add("hidden");
@@ -1461,7 +1433,7 @@ class WongApp {
 
     const warnContrast = document.getElementById("dep-warning-contrast");
     if (warnContrast) {
-      if (!hasGrid) {
+      if (s.modifiers.contrast.enabled && !hasGrid) {
         warnContrast.classList.remove("hidden");
       } else {
         warnContrast.classList.add("hidden");
@@ -1470,7 +1442,7 @@ class WongApp {
 
     const warnConc = document.getElementById("dep-warning-concentration");
     if (warnConc) {
-      if (!hasGrid) {
+      if (s.modifiers.concentration.enabled && !hasGrid) {
         warnConc.classList.remove("hidden");
       } else {
         warnConc.classList.add("hidden");
@@ -1743,6 +1715,32 @@ class WongApp {
         ? "bg-accent/15 text-accent border border-accent/30 font-semibold"
         : "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-semibold";
 
+      const s = this.studioEngine?.state;
+      const hasRep = s?.modifiers?.repetition?.enabled;
+      const hasRad = s?.modifiers?.radiation?.enabled;
+      const hasGrid = hasRep || hasRad;
+
+      let dependencyNotice = "";
+      if (key === "structure" && !hasRep) {
+        dependencyNotice = `
+          <div class="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] flex items-center gap-1 font-mono">
+            <i data-lucide="info" class="w-3 h-3 flex-shrink-0"></i>
+            <span>Requires Repetition grid</span>
+          </div>`;
+      } else if (["similarity", "gradation", "anomaly", "contrast", "concentration"].includes(key) && !hasGrid) {
+        dependencyNotice = `
+          <div class="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] flex items-center gap-1 font-mono">
+            <i data-lucide="info" class="w-3 h-3 flex-shrink-0"></i>
+            <span>Requires Repetition or Radiation</span>
+          </div>`;
+      } else if (key === "repetition" && hasRad) {
+        dependencyNotice = `
+          <div class="px-2 py-1 rounded bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] flex items-center gap-1 font-mono">
+            <i data-lucide="layers" class="w-3 h-3 flex-shrink-0"></i>
+            <span>Radiation polar grid prevails</span>
+          </div>`;
+      }
+
       return `
         <div class="study-card-item rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 text-xs flex flex-col gap-2.5 transition-all hover:border-[var(--text-muted)] group relative shadow-xs" data-card-key="${key}">
           <!-- Card Header -->
@@ -1761,6 +1759,9 @@ class WongApp {
               </button>
             ` : ''}
           </div>
+
+          <!-- Prerequisite / Status notice if unfulfilled or preceded -->
+          ${dependencyNotice}
 
           <!-- Concept Subtitle -->
           <div class="font-mono text-[10px] text-accent font-medium tracking-wide">
