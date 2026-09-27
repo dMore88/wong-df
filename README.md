@@ -1,6 +1,10 @@
 # Wucius Wong: Principles of Two-Dimensional Design
 ### Interactive Generative Studio & Pedagogical Companion
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen?style=for-the-badge&logo=github)](https://dmore88.github.io/wong-df/)
+
+> 🌐 **Live Web Application:** [https://dmore88.github.io/wong-df/](https://dmore88.github.io/wong-df/)
+
 A web application for learning and practicing the foundational visual grammar from **Wucius Wong's** classic textbook *"Principles of Two-Dimensional Design"* (*Fundamentos del diseño bi- y tridimensional*).
 
 ---
@@ -31,16 +35,30 @@ A web application for learning and practicing the foundational visual grammar fr
 
 ---
 
-## How to Run
+## Live Access & How to Run
 
-The app is built with modern ES modules and zero build dependencies:
+### 🚀 Direct Online Access (GitHub Pages)
+The studio is hosted on GitHub Pages and can be opened immediately on any modern browser:
+
+👉 **[https://dmore88.github.io/wong-df/](https://dmore88.github.io/wong-df/)**
+
+*Zero installation, zero dependencies, runs instantly on desktop and mobile.*
+
+---
+
+### 💻 Local Run (Optional)
+
+If you prefer to run or modify the code locally:
 
 ```bash
-# Serve locally using Python
+# Clone the repository
+git clone https://github.com/dMore88/wong-df.git
+cd wong-df
+
+# Option A: Open index.html directly in your web browser (runs completely offline)
+
+# Option B: Serve locally via Python
 python3 -m http.server 8080
 ```
 
-Then open your browser to:
-[http://localhost:8080](http://localhost:8080)
-
-Or open `index.html` directly in any modern web browser.
+Then visit [http://localhost:8080](http://localhost:8080) in your browser.
