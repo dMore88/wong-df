@@ -1014,15 +1014,68 @@
           </div>
 
           <!-- 10. SPACE -->
-          <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] opacity-60 flex items-center justify-between">
-            <div>
-              <div class="font-medium text-xs text-[var(--text-primary)]">Space</div>
-              <div class="text-[10px] text-[var(--text-muted)]">Positive, negative and implied depth</div>
+          <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-xs text-[var(--text-primary)]">Space</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Positive, negative & illusory depth</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mod-space-toggle">
+                <span class="slider-toggle"></span>
+              </label>
             </div>
-            <label class="switch cursor-not-allowed">
-              <input type="checkbox" disabled>
-              <span class="slider-toggle opacity-50"></span>
-            </label>
+
+            <!-- Accordion Controls for Space -->
+            <div id="accordion-space" class="hidden p-3 pt-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] space-y-3 text-xs">
+              <div class="pt-2">
+                <label class="text-[11px] text-[var(--text-secondary)] block mb-1">Spatial Projection Mode</label>
+                <div class="relative">
+                  <select id="space-mode" class="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs py-1.5 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer">
+                    <option value="isometric">Fig. 74d: Isometric Volumetric Extrusion</option>
+                    <option value="foreshortening">Fig. 73b: 3D Spatial Plane Tilt (Foreshortening)</option>
+                    <option value="fluctuating">Fig. 76b: Fluctuating Reversible Spatial Planes</option>
+                    <option value="conflicting">Fig. 77: Conflicting Paradoxical Depth & Interlock</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 absolute right-2.5 top-2.5 pointer-events-none text-[var(--text-muted)]"></i>
+                </div>
+              </div>
+
+              <!-- Depth & Projection Angle -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Extrusion Depth</span>
+                    <span id="val-space-depth" class="font-mono text-accent font-bold">35px</span>
+                  </div>
+                  <input type="range" id="input-space-depth" min="10" max="80" step="5" value="35">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                    <span>Projection Angle</span>
+                    <span id="val-space-angle" class="font-mono text-accent font-bold">30°</span>
+                  </div>
+                  <input type="range" id="input-space-angle" min="-60" max="60" step="5" value="30">
+                </div>
+              </div>
+
+              <!-- Shading Contrast -->
+              <div>
+                <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] mb-0.5">
+                  <span>Facet Shading Contrast</span>
+                  <span id="val-space-shading" class="font-mono text-accent font-bold">65%</span>
+                </div>
+                <input type="range" id="input-space-shading" min="20" max="100" step="5" value="65">
+              </div>
+
+              <!-- Checkbox: Isometric Construction Guides -->
+              <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Display 30° Isometric Grid Lines</span>
+                  <input type="checkbox" id="check-space-isoguides">
+                </label>
+              </div>
+            </div>
           </div>
 
         </div>

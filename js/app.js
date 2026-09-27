@@ -1030,6 +1030,63 @@ class WongApp {
       this.renderStudio();
     });
 
+    // ------------------------------------------------------------
+    // Space Modifier (Chapter 12)
+    // ------------------------------------------------------------
+    const spaceToggle = document.getElementById("mod-space-toggle");
+    const spaceAccordion = document.getElementById("accordion-space");
+
+    spaceToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.space.enabled = isChecked;
+      if (isChecked) {
+        spaceAccordion?.classList.remove("hidden");
+        this.showToast("Space Active: Illusory Depth & Isometric Planes");
+      } else {
+        spaceAccordion?.classList.add("hidden");
+        this.showToast("Space Deactivated: Restored to Flat 2D Picture Plane");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("space-mode")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.space.mode = e.target.value;
+      this.renderStudio();
+    });
+
+    const spaceDepth = document.getElementById("input-space-depth");
+    const valSpaceDepth = document.getElementById("val-space-depth");
+    spaceDepth?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.space.depth = v;
+      if (valSpaceDepth) valSpaceDepth.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    const spaceAngle = document.getElementById("input-space-angle");
+    const valSpaceAngle = document.getElementById("val-space-angle");
+    spaceAngle?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.space.angle = v;
+      if (valSpaceAngle) valSpaceAngle.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    const spaceShading = document.getElementById("input-space-shading");
+    const valSpaceShading = document.getElementById("val-space-shading");
+    spaceShading?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.space.shading = v;
+      if (valSpaceShading) valSpaceShading.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-space-isoguides")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.space.showIsoGuides = e.target.checked;
+      this.renderStudio();
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -1299,6 +1356,24 @@ class WongApp {
     setText("val-text-scale", `${s.modifiers.texture.scale}px`);
     setVal("input-text-contrast", s.modifiers.texture.contrast);
     setText("val-text-contrast", `${s.modifiers.texture.contrast}%`);
+
+    // Space sync
+    const spaceToggle = document.getElementById("mod-space-toggle");
+    if (spaceToggle) spaceToggle.checked = s.modifiers.space?.enabled ?? false;
+    const spaceAccordion = document.getElementById("accordion-space");
+    if (spaceAccordion) {
+      if (s.modifiers.space?.enabled) spaceAccordion.classList.remove("hidden");
+      else spaceAccordion.classList.add("hidden");
+    }
+    setVal("space-mode", s.modifiers.space?.mode || "isometric");
+    setVal("input-space-depth", s.modifiers.space?.depth ?? 35);
+    setText("val-space-depth", `${s.modifiers.space?.depth ?? 35}px`);
+    setVal("input-space-angle", s.modifiers.space?.angle ?? 30);
+    setText("val-space-angle", `${s.modifiers.space?.angle ?? 30}°`);
+    setVal("input-space-shading", s.modifiers.space?.shading ?? 65);
+    setText("val-space-shading", `${s.modifiers.space?.shading ?? 65}%`);
+    const checkIso = document.getElementById("check-space-isoguides");
+    if (checkIso) checkIso.checked = s.modifiers.space?.showIsoGuides ?? false;
 
     this.initStudioShapePickers();
     this.updateModifierDependencyWarnings();

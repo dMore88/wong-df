@@ -1109,7 +1109,14 @@ const defaultStudioState = {
       scale: 14, // 6 to 36
       contrast: 40 // opacity 15 to 80
     },
-    space: { enabled: false }
+    space: {
+      enabled: false,
+      mode: "isometric", // isometric, foreshortening, fluctuating, conflicting
+      depth: 35, // 10 to 80
+      angle: 30, // -60 to 60
+      shading: 65, // 20 to 100
+      showIsoGuides: false
+    }
   },
 
   // Mat / Canvas display settings
@@ -1154,9 +1161,21 @@ class StudioEngine {
     return `USED ON THIS DESIGN: ${this.getActivePrinciples().join(" / ")}`;
   }
 
-  // Draw a single shape helper with in-figure texture support
-  drawShape(ctx, shapeId, size, fgColor, strokeOnly = false, lineWidth = 2, bgColor = null) {
+  // Draw a single shape helper with in-figure texture and illusory 3D space support
+  drawShape(ctx, shapeId, size, fgColor, strokeOnly = false, lineWidth = 2, bgColor = null, isAlternating = false, skipSpace = false) {
     const shapeDef = Shapes[shapeId] || Shapes.circle;
+    const space = this.state.modifiers.space;
+
+    if (!space || !space.enabled || skipSpace) {
+      this.drawFlatShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor);
+      return;
+    }
+
+    this.drawSpatialShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor, isAlternating, space);
+  }
+
+  // Draw flat shape with optional in-figure tactile texture
+  drawFlatShape(ctx, shapeDef, size, fgColor, strokeOnly = false, lineWidth = 2, bgColor = null) {
     ctx.save();
     shapeDef.draw(ctx, size);
 
@@ -1180,6 +1199,215 @@ class StudioEngine {
       }
     }
     ctx.restore();
+  }
+
+  // Draw illusory 3D spatial form (Chapter 12: Space)
+  drawSpatialShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor, isAlternating, space) {
+    const mode = space.mode || "isometric";
+    const depth = space.depth ?? 35;
+    const angleRad = ((space.angle ?? 30) * Math.PI) / 180;
+    const shading = (space.shading ?? 65) / 100;
+
+    if (mode === "foreshortening") {
+      // Fig. 73b: 3D Spatial Plane Tilt (Foreshortening)
+      const tiltAmount = Math.sin(angleRad) * 0.45;
+      const depthSquash = Math.max(0.2, 1 - (depth / 100) * 0.6);
+
+      // Subtle cast shadow on ground plane
+      ctx.save();
+      ctx.translate(Math.cos(angleRad) * depth * 0.35, Math.sin(Math.abs(angleRad)) * depth * 0.4);
+      ctx.scale(1, 0.28);
+      ctx.fillStyle = fgColor;
+      ctx.globalAlpha = 0.2 * shading;
+      shapeDef.draw(ctx, size);
+      ctx.fill();
+      ctx.restore();
+
+      // Floating tilted plane with depth projection
+      ctx.save();
+      ctx.transform(1, 0, tiltAmount, depthSquash, 0, 0);
+      this.drawFlatShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor);
+      ctx.restore();
+
+    } else if (mode === "fluctuating") {
+      // Fig. 76b: Fluctuating Reversible Spatial Planes
+      const dir = isAlternating ? -1 : 1;
+      const totalDx = Math.cos(angleRad) * depth * dir;
+      const totalDy = -Math.sin(angleRad) * depth * dir;
+      const steps = Math.max(6, Math.min(20, Math.round(depth / 3)));
+
+      if (strokeOnly) {
+        // Wireframe fluctuating prism
+        ctx.save();
+        ctx.strokeStyle = fgColor;
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = 0.35;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(totalDx, totalDy);
+        ctx.globalAlpha = 1.0;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+      } else {
+        // Volumetric shaded slices with alternating facet contrast
+        ctx.save();
+        ctx.fillStyle = fgColor;
+        const sideAlpha = isAlternating ? (0.2 + shading * 0.35) : (0.55 - shading * 0.25);
+        ctx.globalAlpha = Math.max(0.12, Math.min(0.85, sideAlpha));
+
+        for (let s = 0; s < steps; s++) {
+          const t = s / steps;
+          ctx.save();
+          ctx.translate(totalDx * t, totalDy * t);
+          shapeDef.draw(ctx, size);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+
+        // Front face
+        ctx.save();
+        ctx.translate(totalDx, totalDy);
+        this.drawFlatShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor);
+        ctx.restore();
+      }
+
+    } else if (mode === "conflicting") {
+      // Fig. 77: Conflicting Paradoxical Depth & Interlock
+      const dx1 = Math.cos(angleRad) * depth * 0.85;
+      const dy1 = -Math.sin(angleRad) * depth * 0.85;
+      const dx2 = -Math.cos(angleRad) * depth * 0.65;
+      const dy2 = Math.sin(angleRad) * depth * 0.65;
+
+      if (strokeOnly) {
+        ctx.save();
+        ctx.strokeStyle = fgColor;
+        ctx.lineWidth = lineWidth;
+
+        // Facet 1
+        ctx.save();
+        ctx.translate(dx1, dy1);
+        ctx.globalAlpha = 0.5;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+        ctx.restore();
+
+        // Center
+        ctx.globalAlpha = 1.0;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+
+        // Facet 2
+        ctx.save();
+        ctx.translate(dx2, dy2);
+        ctx.globalAlpha = 0.5;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+      } else {
+        // Secondary opposing paradoxical facet
+        ctx.save();
+        ctx.fillStyle = fgColor;
+        ctx.globalAlpha = 0.3 * shading;
+        for (let s = 1; s <= 6; s++) {
+          const t = s / 6;
+          ctx.save();
+          ctx.translate(dx2 * t, dy2 * t);
+          shapeDef.draw(ctx, size);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+
+        // Primary forward facet
+        ctx.save();
+        ctx.fillStyle = fgColor;
+        ctx.globalAlpha = 0.45 * shading;
+        for (let s = 1; s <= 8; s++) {
+          const t = s / 8;
+          ctx.save();
+          ctx.translate(dx1 * t, dy1 * t);
+          shapeDef.draw(ctx, size);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+
+        // Central plane
+        this.drawFlatShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor);
+
+        // Paradoxical interlock cut line
+        ctx.save();
+        ctx.strokeStyle = bgColor || (this.state.invertFigureGround ? "#111111" : "#FAFAFA");
+        ctx.lineWidth = 2;
+        ctx.save();
+        ctx.translate(dx1 * 0.45, dy1 * 0.45);
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+      }
+
+    } else {
+      // Default: Fig. 74d Isometric Volumetric Extrusion
+      const totalDx = Math.cos(angleRad) * depth;
+      const totalDy = -Math.sin(angleRad) * depth;
+      const steps = Math.max(8, Math.min(28, Math.round(depth / 2.2)));
+
+      if (strokeOnly) {
+        // Wireframe extrusion
+        ctx.save();
+        ctx.strokeStyle = fgColor;
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = 0.35;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(totalDx, totalDy);
+        ctx.globalAlpha = 1.0;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+      } else {
+        // Volumetric shaded extrusion body
+        ctx.save();
+        ctx.fillStyle = fgColor;
+        const sideAlpha = 0.15 + (1 - shading * 0.7) * 0.45;
+        ctx.globalAlpha = Math.max(0.12, Math.min(0.85, sideAlpha));
+
+        for (let s = 0; s < steps; s++) {
+          const t = s / steps;
+          ctx.save();
+          ctx.translate(totalDx * t, totalDy * t);
+          shapeDef.draw(ctx, size);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+
+        // Architectural facet edge contour
+        ctx.save();
+        ctx.strokeStyle = fgColor;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.3 * shading;
+        shapeDef.draw(ctx, size);
+        ctx.stroke();
+        ctx.restore();
+
+        // Front face (with texture if active)
+        ctx.save();
+        ctx.translate(totalDx, totalDy);
+        this.drawFlatShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor);
+        ctx.restore();
+      }
+    }
   }
 
   // Draw tactile texture strictly within the clipped silhouette of a shape (Chapter 11)
@@ -1262,7 +1490,7 @@ class StudioEngine {
   }
 
   // Render the base unit form (Module) with interrelation operations
-  renderModule(ctx, sizeMultiplier = 1, fgColor = "#111111", bgColor = "#FAFAFA", customScaleA = null, customScaleB = null, shapeOverrideA = null, wireframeOverride = null) {
+  renderModule(ctx, sizeMultiplier = 1, fgColor = "#111111", bgColor = "#FAFAFA", customScaleA = null, customScaleB = null, shapeOverrideA = null, wireframeOverride = null, isAlternating = false) {
     const { formA, formB, interrelation } = this.state;
     const wireframe = wireframeOverride !== null ? wireframeOverride : this.state.wireframe;
     const shapeA = shapeOverrideA || formA.shape;
@@ -1277,7 +1505,7 @@ class StudioEngine {
       ctx.save();
       ctx.translate(ax, ay);
       ctx.rotate((formA.rotation * Math.PI) / 180);
-      this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor);
+      this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
       ctx.restore();
       return;
     }
@@ -1307,7 +1535,7 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
         ctx.restore();
 
         // Draw Form B (if overlapping, add fine outline separation for clarity)
@@ -1318,11 +1546,11 @@ class StudioEngine {
         if (!wireframe && interrelation === "overlapping") {
           // Clean border cut around Form B to clearly distinguish layering
           ctx.save();
-          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor);
+          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor, !isAlternating);
           ctx.restore();
         }
 
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor);
+        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
@@ -1332,13 +1560,13 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
         ctx.restore();
 
         ctx.save();
         ctx.translate(ox, oy);
         ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor);
+        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
@@ -1356,14 +1584,14 @@ class StudioEngine {
         offCtx.save();
         offCtx.translate(cx + ax, cy + ay);
         offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe);
+        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe, 2, null, false, true);
         offCtx.restore();
 
         offCtx.save();
         offCtx.translate(cx + ox, cy + oy);
         offCtx.rotate((formB.rotation * Math.PI) / 180);
         offCtx.globalCompositeOperation = "destination-out";
-        this.drawShape(offCtx, formB.shape, rB, fgColor, false);
+        this.drawShape(offCtx, formB.shape, rB, fgColor, false, 2, null, false, true);
         offCtx.restore();
 
         ctx.drawImage(offCanvas, -cx, -cy);
@@ -1383,14 +1611,14 @@ class StudioEngine {
         offCtx.save();
         offCtx.translate(cx + ax, cy + ay);
         offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe);
+        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe, 2, null, false, true);
         offCtx.restore();
 
         offCtx.save();
         offCtx.translate(cx + ox, cy + oy);
         offCtx.rotate((formB.rotation * Math.PI) / 180);
         offCtx.globalCompositeOperation = "destination-in";
-        this.drawShape(offCtx, formB.shape, rB, fgColor, false);
+        this.drawShape(offCtx, formB.shape, rB, fgColor, false, 2, null, false, true);
         offCtx.restore();
 
         ctx.drawImage(offCanvas, -cx, -cy);
@@ -1402,14 +1630,14 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
         ctx.restore();
 
         ctx.save();
         ctx.translate(ox, oy);
         ctx.rotate((formB.rotation * Math.PI) / 180);
         ctx.globalAlpha = 0.55;
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe);
+        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
@@ -1419,13 +1647,13 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ax, ay);
         ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe);
+        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
         ctx.restore();
 
         ctx.save();
         ctx.translate(ox, oy);
         ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, bgColor, true, 2);
+        this.drawShape(ctx, formB.shape, rB, bgColor, true, 2, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
@@ -1844,9 +2072,8 @@ class StudioEngine {
           }
         }
 
-        const baseScale = Math.min(cW, cH) * 0.45;
-        const normScale = (baseScale / 100) * cellScaleMul * concScaleMul;
-        this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe);
+        const isAlt = (r + c) % 2 === 1;
+        this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
         ctx.restore();
       }
     }
@@ -2203,7 +2430,8 @@ class StudioEngine {
 
           // Natural centrifugal growth scale: outer modules larger, inner smaller
           const growthScale = (0.28 + (i / rings) * 0.42) * cellScaleMul * concScaleMul;
-          this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), cellFg, cellBg, null, null, cellShapeA, cellWireframe);
+          const isAlt = (i + j) % 2 === 1;
+          this.renderModule(ctx, growthScale * (rad.scheme === "multi_center" ? 0.65 : 0.85), cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
           ctx.restore();
         }
       }
@@ -2331,6 +2559,11 @@ class StudioEngine {
       ctx.restore();
     }
 
+    // 2.5 Isometric Drafting Guides (Chapter 12: Space)
+    if (this.state.modifiers.space.enabled && this.state.modifiers.space.showIsoGuides) {
+      this.drawIsometricGuides(ctx, width, height, palette);
+    }
+
     // 3. Render Pipeline: Radiation takes spatial precedence over Cartesian grid
     if (this.state.modifiers.radiation.enabled) {
       this.renderRadiation(ctx, width, height, palette);
@@ -2433,6 +2666,45 @@ class StudioEngine {
         ctx.arc(att2X, att2Y, radius * 0.5, 0, Math.PI * 2);
         ctx.stroke();
       }
+    }
+
+    ctx.restore();
+  }
+
+  // 30° Isometric Construction Guide Grid (Chapter 12: Space)
+  drawIsometricGuides(ctx, width, height, palette) {
+    ctx.save();
+    ctx.strokeStyle = palette.grid;
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.35;
+    ctx.setLineDash([2, 4]);
+
+    const spacing = 36;
+    const tan30 = Math.tan((30 * Math.PI) / 180); // ~0.57735
+    const extendX = height / tan30;
+
+    // 30 degree diagonal lines (ascending)
+    for (let x = -extendX; x <= width + extendX; x += spacing) {
+      ctx.beginPath();
+      ctx.moveTo(x, height);
+      ctx.lineTo(x + extendX, 0);
+      ctx.stroke();
+    }
+
+    // -30 degree diagonal lines (descending)
+    for (let x = -extendX; x <= width + extendX; x += spacing) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + extendX, height);
+      ctx.stroke();
+    }
+
+    // Vertical construction lines
+    for (let x = 0; x <= width; x += spacing * 1.5) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
     }
 
     ctx.restore();
@@ -5752,6 +6024,63 @@ class WongApp {
       this.renderStudio();
     });
 
+    // ------------------------------------------------------------
+    // Space Modifier (Chapter 12)
+    // ------------------------------------------------------------
+    const spaceToggle = document.getElementById("mod-space-toggle");
+    const spaceAccordion = document.getElementById("accordion-space");
+
+    spaceToggle?.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      this.studioEngine.state.modifiers.space.enabled = isChecked;
+      if (isChecked) {
+        spaceAccordion?.classList.remove("hidden");
+        this.showToast("Space Active: Illusory Depth & Isometric Planes");
+      } else {
+        spaceAccordion?.classList.add("hidden");
+        this.showToast("Space Deactivated: Restored to Flat 2D Picture Plane");
+      }
+      this.updateStudioColophon();
+      this.renderStudio();
+    });
+
+    document.getElementById("space-mode")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.space.mode = e.target.value;
+      this.renderStudio();
+    });
+
+    const spaceDepth = document.getElementById("input-space-depth");
+    const valSpaceDepth = document.getElementById("val-space-depth");
+    spaceDepth?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.space.depth = v;
+      if (valSpaceDepth) valSpaceDepth.textContent = `${v}px`;
+      this.renderStudio();
+    });
+
+    const spaceAngle = document.getElementById("input-space-angle");
+    const valSpaceAngle = document.getElementById("val-space-angle");
+    spaceAngle?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.space.angle = v;
+      if (valSpaceAngle) valSpaceAngle.textContent = `${v}°`;
+      this.renderStudio();
+    });
+
+    const spaceShading = document.getElementById("input-space-shading");
+    const valSpaceShading = document.getElementById("val-space-shading");
+    spaceShading?.addEventListener("input", (e) => {
+      const v = parseInt(e.target.value, 10);
+      this.studioEngine.state.modifiers.space.shading = v;
+      if (valSpaceShading) valSpaceShading.textContent = `${v}%`;
+      this.renderStudio();
+    });
+
+    document.getElementById("check-space-isoguides")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.space.showIsoGuides = e.target.checked;
+      this.renderStudio();
+    });
+
     // Studio Canvas Toolbar Actions
     document.getElementById("studio-bounds-toggle")?.addEventListener("click", () => {
       this.studioEngine.state.showSafeBounds = !this.studioEngine.state.showSafeBounds;
@@ -6021,6 +6350,24 @@ class WongApp {
     setText("val-text-scale", `${s.modifiers.texture.scale}px`);
     setVal("input-text-contrast", s.modifiers.texture.contrast);
     setText("val-text-contrast", `${s.modifiers.texture.contrast}%`);
+
+    // Space sync
+    const spaceToggle = document.getElementById("mod-space-toggle");
+    if (spaceToggle) spaceToggle.checked = s.modifiers.space?.enabled ?? false;
+    const spaceAccordion = document.getElementById("accordion-space");
+    if (spaceAccordion) {
+      if (s.modifiers.space?.enabled) spaceAccordion.classList.remove("hidden");
+      else spaceAccordion.classList.add("hidden");
+    }
+    setVal("space-mode", s.modifiers.space?.mode || "isometric");
+    setVal("input-space-depth", s.modifiers.space?.depth ?? 35);
+    setText("val-space-depth", `${s.modifiers.space?.depth ?? 35}px`);
+    setVal("input-space-angle", s.modifiers.space?.angle ?? 30);
+    setText("val-space-angle", `${s.modifiers.space?.angle ?? 30}°`);
+    setVal("input-space-shading", s.modifiers.space?.shading ?? 65);
+    setText("val-space-shading", `${s.modifiers.space?.shading ?? 65}%`);
+    const checkIso = document.getElementById("check-space-isoguides");
+    if (checkIso) checkIso.checked = s.modifiers.space?.showIsoGuides ?? false;
 
     this.initStudioShapePickers();
     this.updateModifierDependencyWarnings();
