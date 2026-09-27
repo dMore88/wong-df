@@ -1399,7 +1399,10 @@ const RealWorldRenderer = {
 };
 
 
-  // Shape definitions and drawing procedures for Wucius Wong Design Studio
+  const STUDIO_SHAPE_KEYS = [
+  "circle", "square", "triangle_eq", "triangle_right", "rhombus", "arrow_up", "hexagon",
+  "star4", "teardrop", "letter_a", "letter_h", "letter_z", "cross"
+];
 
 const Shapes = {
   // 1. Pure Geometrics
@@ -1543,6 +1546,39 @@ const Shapes = {
     iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><polygon points="-6,-10 6,-10 14,10 -14,10" fill="currentColor"/></svg>`
   },
 
+  arrow_up: {
+    id: "arrow_up",
+    name: "Arrow Up",
+    category: "geometric",
+    draw(ctx, size) {
+      const s = size;
+      const tipY = -s * 0.48;
+      const wingY = -s * 0.05;
+      const botY = s * 0.48;
+      const wingW = s * 0.42;
+      const stemW = s * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(0, tipY);
+      ctx.lineTo(wingW, wingY);
+      ctx.lineTo(stemW, wingY);
+      ctx.lineTo(stemW, botY);
+      ctx.lineTo(-stemW, botY);
+      ctx.lineTo(-stemW, wingY);
+      ctx.lineTo(-wingW, wingY);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const tipY = -s * 0.48;
+      const wingY = -s * 0.05;
+      const botY = s * 0.48;
+      const wingW = s * 0.42;
+      const stemW = s * 0.18;
+      return `<polygon points="0,${tipY} ${wingW},${wingY} ${stemW},${wingY} ${stemW},${botY} ${-stemW},${botY} ${-stemW},${wingY} ${-wingW},${wingY}" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><polygon points="0,-14 12,-1 5,-1 5,14 -5,14 -5,-1 -12,-1" fill="currentColor"/></svg>`
+  },
+
   hexagon: {
     id: "hexagon",
     name: "Hexagon",
@@ -1642,6 +1678,118 @@ const Shapes = {
       return `<path d="M 0 ${-l/2} C ${w/1.5} ${-l/6}, ${w/1.8} ${l/2}, 0 ${l/2} C ${-w/1.8} ${l/2}, ${-w/1.5} ${-l/6}, 0 ${-l/2} Z" />`;
     },
     iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><path d="M 0 -14 C 10 -4, 9 13, 0 13 C -9 13, -10 -4, 0 -14 Z" fill="currentColor"/></svg>`
+  },
+
+  letter_a: {
+    id: "letter_a",
+    name: "Letter A",
+    category: "typographic",
+    draw(ctx, size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.40;
+      const topW = s * 0.10;
+      const footW = s * 0.15;
+      const barY = s * 0.10;
+      const barH = s * 0.12;
+
+      ctx.beginPath();
+      ctx.moveTo(-topW, -h2);
+      ctx.lineTo(topW, -h2);
+      ctx.lineTo(w2, h2);
+      ctx.lineTo(w2 - footW, h2);
+      ctx.lineTo(s * 0.09, barY + barH);
+      ctx.lineTo(-s * 0.09, barY + barH);
+      ctx.lineTo(-w2 + footW, h2);
+      ctx.lineTo(-w2, h2);
+      ctx.closePath();
+
+      ctx.moveTo(0, -h2 * 0.45);
+      ctx.lineTo(-s * 0.12, barY - 2);
+      ctx.lineTo(s * 0.12, barY - 2);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.40;
+      const topW = s * 0.10;
+      const footW = s * 0.15;
+      const barY = s * 0.10;
+      const barH = s * 0.12;
+      return `<path fill-rule="evenodd" d="M ${-topW} ${-h2} L ${topW} ${-h2} L ${w2} ${h2} L ${w2 - footW} ${h2} L ${s * 0.09} ${barY + barH} L ${-s * 0.09} ${barY + barH} L ${-w2 + footW} ${h2} L ${-w2} ${h2} Z M 0 ${-h2 * 0.45} L ${s * 0.12} ${barY - 2} L ${-s * 0.12} ${barY - 2} Z" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><text x="0" y="5" font-family="Space Grotesk, Inter, sans-serif" font-weight="800" font-size="22" text-anchor="middle" dominant-baseline="middle" fill="currentColor">A</text></svg>`
+  },
+
+  letter_h: {
+    id: "letter_h",
+    name: "Letter H",
+    category: "typographic",
+    draw(ctx, size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const colW = s * 0.16;
+      const barH = s * 0.14;
+      ctx.beginPath();
+      ctx.moveTo(-w2, -h2);
+      ctx.lineTo(-w2 + colW, -h2);
+      ctx.lineTo(-w2 + colW, -barH / 2);
+      ctx.lineTo(w2 - colW, -barH / 2);
+      ctx.lineTo(w2 - colW, -h2);
+      ctx.lineTo(w2, -h2);
+      ctx.lineTo(w2, h2);
+      ctx.lineTo(w2 - colW, h2);
+      ctx.lineTo(w2 - colW, barH / 2);
+      ctx.lineTo(-w2 + colW, barH / 2);
+      ctx.lineTo(-w2 + colW, h2);
+      ctx.lineTo(-w2, h2);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const colW = s * 0.16;
+      const barH = s * 0.14;
+      return `<polygon points="${-w2},${-h2} ${-w2 + colW},${-h2} ${-w2 + colW},${-barH / 2} ${w2 - colW},${-barH / 2} ${w2 - colW},${-h2} ${w2},${-h2} ${w2},${h2} ${w2 - colW},${h2} ${w2 - colW},${barH / 2} ${-w2 + colW},${barH / 2} ${-w2 + colW},${h2} ${-w2},${h2}" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><text x="0" y="5" font-family="Space Grotesk, Inter, sans-serif" font-weight="800" font-size="22" text-anchor="middle" dominant-baseline="middle" fill="currentColor">H</text></svg>`
+  },
+
+  letter_z: {
+    id: "letter_z",
+    name: "Letter Z",
+    category: "typographic",
+    draw(ctx, size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const barH = s * 0.15;
+      const diagW = s * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(-w2, -h2);
+      ctx.lineTo(w2, -h2);
+      ctx.lineTo(w2, -h2 + barH);
+      ctx.lineTo(-w2 + diagW * 1.5, h2 - barH);
+      ctx.lineTo(w2, h2 - barH);
+      ctx.lineTo(w2, h2);
+      ctx.lineTo(-w2, h2);
+      ctx.lineTo(-w2, h2 - barH);
+      ctx.lineTo(w2 - diagW * 1.5, -h2 + barH);
+      ctx.lineTo(-w2, -h2 + barH);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const barH = s * 0.15;
+      const diagW = s * 0.18;
+      return `<polygon points="${-w2},${-h2} ${w2},${-h2} ${w2},${-h2 + barH} ${-w2 + diagW * 1.5},${h2 - barH} ${w2},${h2 - barH} ${w2},${h2} ${-w2},${h2} ${-w2},${h2 - barH} ${w2 - diagW * 1.5},${-h2 + barH} ${-w2},${-h2 + barH}" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><text x="0" y="5" font-family="Space Grotesk, Inter, sans-serif" font-weight="800" font-size="22" text-anchor="middle" dominant-baseline="middle" fill="currentColor">Z</text></svg>`
   },
 
   capsule: {
@@ -5970,8 +6118,7 @@ class WongApp {
 
     containerA.innerHTML = "";
     containerB.innerHTML = "";
-
-    const shapeKeys = Object.keys(Shapes);
+    const shapeKeys = typeof STUDIO_SHAPE_KEYS !== "undefined" ? STUDIO_SHAPE_KEYS : Object.keys(Shapes);
 
     shapeKeys.forEach(key => {
       const shape = Shapes[key];
@@ -6176,9 +6323,27 @@ class WongApp {
       this.onModifierStateChanged();
     });
 
-    // Repetition Grid Variation
+    // Repetition Grid Variation (Icon Buttons + Select Sync)
+    const gridTypeBtns = document.querySelectorAll(".grid-type-btn");
+    gridTypeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        gridTypeBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const val = btn.dataset.value;
+        const repSelect = document.getElementById("rep-grid-type");
+        if (repSelect) repSelect.value = val;
+        this.studioEngine.state.modifiers.repetition.gridType = val;
+        this.renderStudio();
+      });
+    });
+
     document.getElementById("rep-grid-type")?.addEventListener("change", (e) => {
-      this.studioEngine.state.modifiers.repetition.gridType = e.target.value;
+      const val = e.target.value;
+      gridTypeBtns.forEach(b => {
+        if (b.dataset.value === val) b.classList.add("active");
+        else b.classList.remove("active");
+      });
+      this.studioEngine.state.modifiers.repetition.gridType = val;
       this.renderStudio();
     });
 
@@ -6953,6 +7118,10 @@ class WongApp {
     }
 
     setVal("rep-grid-type", s.modifiers.repetition.gridType);
+    document.querySelectorAll(".grid-type-btn").forEach(b => {
+      if (b.dataset.value === s.modifiers.repetition.gridType) b.classList.add("active");
+      else b.classList.remove("active");
+    });
     setVal("input-rep-cols", s.modifiers.repetition.cols);
     setText("val-rep-cols", s.modifiers.repetition.cols);
     setVal("input-rep-rows", s.modifiers.repetition.rows);
@@ -7541,19 +7710,22 @@ class WongApp {
         <div class="study-card-item rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 text-xs flex flex-col gap-2.5 transition-all hover:border-[var(--text-muted)] group relative shadow-xs" data-card-key="${key}">
           <!-- Card Header -->
           <div class="flex items-center justify-between gap-1">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${badgeClasses} flex-shrink-0">
-                CH ${card.number}
-              </span>
-              <span class="font-bold uppercase tracking-wider text-[11px] text-[var(--text-primary)] truncate" title="${card.title}">
-                ${card.title}
-              </span>
-            </div>
-            ${!isBase ? `
-              <button class="btn-card-deactivate p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-accent transition-colors flex-shrink-0" data-key="${key}" title="Deactivate ${card.title}">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            <span class="font-bold uppercase tracking-wider text-[11px] text-[var(--text-primary)] truncate" title="${card.title}">
+              ${card.title}
+            </span>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button class="btn-card-theory p-1 rounded hover:bg-[var(--bg-card)] text-rose-500/80 hover:text-accent transition-colors" data-chapter="${card.chapterId}" data-title="${card.title}" title="View in Theory">
+                <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
               </button>
-            ` : ''}
+              <button class="btn-card-realworld p-1 rounded hover:bg-[var(--bg-card)] text-emerald-600/80 hover:text-emerald-500 transition-colors" data-case="${card.realWorldCaseId}" data-title="${card.title}" title="Explore in Real World">
+                <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+              </button>
+              ${!isBase ? `
+                <button class="btn-card-deactivate p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-accent transition-colors" data-key="${key}" title="Deactivate ${card.title}">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              ` : ''}
+            </div>
           </div>
 
           <!-- Prerequisite / Status notice if unfulfilled or preceded -->
@@ -7578,17 +7750,6 @@ class WongApp {
             </div>
           </div>
 
-          <!-- Quick Navigation Links -->
-          <div class="flex items-center gap-2 pt-1 border-t border-[var(--border-color)]">
-            <button class="btn-card-theory flex-1 py-1.5 px-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] hover:border-accent/40 border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)] flex items-center justify-center gap-1.5 transition-all shadow-xs" data-chapter="${card.chapterId}" data-title="${card.title}">
-              <i data-lucide="book-open" class="w-3 h-3 text-accent"></i>
-              <span>Theory</span>
-            </button>
-            <button class="btn-card-realworld flex-1 py-1.5 px-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] hover:border-emerald-500/40 border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)] flex items-center justify-center gap-1.5 transition-all shadow-xs" data-case="${card.realWorldCaseId}" data-title="${card.title}">
-              <i data-lucide="briefcase" class="w-3 h-3 text-emerald-500"></i>
-              <span>Real World</span>
-            </button>
-          </div>
         </div>
       `;
     }).join("");
@@ -8103,6 +8264,7 @@ window.addEventListener("DOMContentLoaded", () => {
     window.WongApp = WongApp;
     window.CanvasUtils = CanvasUtils;
     window.Shapes = Shapes;
+    window.STUDIO_SHAPE_KEYS = STUDIO_SHAPE_KEYS;
     window.realWorldCases = realWorldCases;
     window.chaptersContent = chaptersContent;
   }

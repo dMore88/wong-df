@@ -196,8 +196,7 @@ class WongApp {
 
     containerA.innerHTML = "";
     containerB.innerHTML = "";
-
-    const shapeKeys = Object.keys(Shapes);
+    const shapeKeys = typeof STUDIO_SHAPE_KEYS !== "undefined" ? STUDIO_SHAPE_KEYS : Object.keys(Shapes);
 
     shapeKeys.forEach(key => {
       const shape = Shapes[key];
@@ -402,9 +401,27 @@ class WongApp {
       this.onModifierStateChanged();
     });
 
-    // Repetition Grid Variation
+    // Repetition Grid Variation (Icon Buttons + Select Sync)
+    const gridTypeBtns = document.querySelectorAll(".grid-type-btn");
+    gridTypeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        gridTypeBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const val = btn.dataset.value;
+        const repSelect = document.getElementById("rep-grid-type");
+        if (repSelect) repSelect.value = val;
+        this.studioEngine.state.modifiers.repetition.gridType = val;
+        this.renderStudio();
+      });
+    });
+
     document.getElementById("rep-grid-type")?.addEventListener("change", (e) => {
-      this.studioEngine.state.modifiers.repetition.gridType = e.target.value;
+      const val = e.target.value;
+      gridTypeBtns.forEach(b => {
+        if (b.dataset.value === val) b.classList.add("active");
+        else b.classList.remove("active");
+      });
+      this.studioEngine.state.modifiers.repetition.gridType = val;
       this.renderStudio();
     });
 
@@ -1179,6 +1196,10 @@ class WongApp {
     }
 
     setVal("rep-grid-type", s.modifiers.repetition.gridType);
+    document.querySelectorAll(".grid-type-btn").forEach(b => {
+      if (b.dataset.value === s.modifiers.repetition.gridType) b.classList.add("active");
+      else b.classList.remove("active");
+    });
     setVal("input-rep-cols", s.modifiers.repetition.cols);
     setText("val-rep-cols", s.modifiers.repetition.cols);
     setVal("input-rep-rows", s.modifiers.repetition.rows);
@@ -1767,19 +1788,22 @@ class WongApp {
         <div class="study-card-item rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 text-xs flex flex-col gap-2.5 transition-all hover:border-[var(--text-muted)] group relative shadow-xs" data-card-key="${key}">
           <!-- Card Header -->
           <div class="flex items-center justify-between gap-1">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${badgeClasses} flex-shrink-0">
-                CH ${card.number}
-              </span>
-              <span class="font-bold uppercase tracking-wider text-[11px] text-[var(--text-primary)] truncate" title="${card.title}">
-                ${card.title}
-              </span>
-            </div>
-            ${!isBase ? `
-              <button class="btn-card-deactivate p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-accent transition-colors flex-shrink-0" data-key="${key}" title="Deactivate ${card.title}">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            <span class="font-bold uppercase tracking-wider text-[11px] text-[var(--text-primary)] truncate" title="${card.title}">
+              ${card.title}
+            </span>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button class="btn-card-theory p-1 rounded hover:bg-[var(--bg-card)] text-rose-500/80 hover:text-accent transition-colors" data-chapter="${card.chapterId}" data-title="${card.title}" title="View in Theory">
+                <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
               </button>
-            ` : ''}
+              <button class="btn-card-realworld p-1 rounded hover:bg-[var(--bg-card)] text-emerald-600/80 hover:text-emerald-500 transition-colors" data-case="${card.realWorldCaseId}" data-title="${card.title}" title="Explore in Real World">
+                <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+              </button>
+              ${!isBase ? `
+                <button class="btn-card-deactivate p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-accent transition-colors" data-key="${key}" title="Deactivate ${card.title}">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              ` : ''}
+            </div>
           </div>
 
           <!-- Prerequisite / Status notice if unfulfilled or preceded -->
@@ -1804,17 +1828,6 @@ class WongApp {
             </div>
           </div>
 
-          <!-- Quick Navigation Links -->
-          <div class="flex items-center gap-2 pt-1 border-t border-[var(--border-color)]">
-            <button class="btn-card-theory flex-1 py-1.5 px-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] hover:border-accent/40 border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)] flex items-center justify-center gap-1.5 transition-all shadow-xs" data-chapter="${card.chapterId}" data-title="${card.title}">
-              <i data-lucide="book-open" class="w-3 h-3 text-accent"></i>
-              <span>Theory</span>
-            </button>
-            <button class="btn-card-realworld flex-1 py-1.5 px-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] hover:border-emerald-500/40 border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)] flex items-center justify-center gap-1.5 transition-all shadow-xs" data-case="${card.realWorldCaseId}" data-title="${card.title}">
-              <i data-lucide="briefcase" class="w-3 h-3 text-emerald-500"></i>
-              <span>Real World</span>
-            </button>
-          </div>
         </div>
       `;
     }).join("");

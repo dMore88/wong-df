@@ -1,4 +1,7 @@
-// Shape definitions and drawing procedures for Wucius Wong Design Studio
+export const STUDIO_SHAPE_KEYS = [
+  "circle", "square", "triangle_eq", "triangle_right", "rhombus", "arrow_up", "hexagon",
+  "star4", "teardrop", "letter_a", "letter_h", "letter_z", "cross"
+];
 
 export const Shapes = {
   // 1. Pure Geometrics
@@ -142,6 +145,39 @@ export const Shapes = {
     iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><polygon points="-6,-10 6,-10 14,10 -14,10" fill="currentColor"/></svg>`
   },
 
+  arrow_up: {
+    id: "arrow_up",
+    name: "Arrow Up",
+    category: "geometric",
+    draw(ctx, size) {
+      const s = size;
+      const tipY = -s * 0.48;
+      const wingY = -s * 0.05;
+      const botY = s * 0.48;
+      const wingW = s * 0.42;
+      const stemW = s * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(0, tipY);
+      ctx.lineTo(wingW, wingY);
+      ctx.lineTo(stemW, wingY);
+      ctx.lineTo(stemW, botY);
+      ctx.lineTo(-stemW, botY);
+      ctx.lineTo(-stemW, wingY);
+      ctx.lineTo(-wingW, wingY);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const tipY = -s * 0.48;
+      const wingY = -s * 0.05;
+      const botY = s * 0.48;
+      const wingW = s * 0.42;
+      const stemW = s * 0.18;
+      return `<polygon points="0,${tipY} ${wingW},${wingY} ${stemW},${wingY} ${stemW},${botY} ${-stemW},${botY} ${-stemW},${wingY} ${-wingW},${wingY}" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><polygon points="0,-14 12,-1 5,-1 5,14 -5,14 -5,-1 -12,-1" fill="currentColor"/></svg>`
+  },
+
   hexagon: {
     id: "hexagon",
     name: "Hexagon",
@@ -241,6 +277,118 @@ export const Shapes = {
       return `<path d="M 0 ${-l/2} C ${w/1.5} ${-l/6}, ${w/1.8} ${l/2}, 0 ${l/2} C ${-w/1.8} ${l/2}, ${-w/1.5} ${-l/6}, 0 ${-l/2} Z" />`;
     },
     iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><path d="M 0 -14 C 10 -4, 9 13, 0 13 C -9 13, -10 -4, 0 -14 Z" fill="currentColor"/></svg>`
+  },
+
+  letter_a: {
+    id: "letter_a",
+    name: "Letter A",
+    category: "typographic",
+    draw(ctx, size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.40;
+      const topW = s * 0.10;
+      const footW = s * 0.15;
+      const barY = s * 0.10;
+      const barH = s * 0.12;
+
+      ctx.beginPath();
+      ctx.moveTo(-topW, -h2);
+      ctx.lineTo(topW, -h2);
+      ctx.lineTo(w2, h2);
+      ctx.lineTo(w2 - footW, h2);
+      ctx.lineTo(s * 0.09, barY + barH);
+      ctx.lineTo(-s * 0.09, barY + barH);
+      ctx.lineTo(-w2 + footW, h2);
+      ctx.lineTo(-w2, h2);
+      ctx.closePath();
+
+      ctx.moveTo(0, -h2 * 0.45);
+      ctx.lineTo(-s * 0.12, barY - 2);
+      ctx.lineTo(s * 0.12, barY - 2);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.40;
+      const topW = s * 0.10;
+      const footW = s * 0.15;
+      const barY = s * 0.10;
+      const barH = s * 0.12;
+      return `<path fill-rule="evenodd" d="M ${-topW} ${-h2} L ${topW} ${-h2} L ${w2} ${h2} L ${w2 - footW} ${h2} L ${s * 0.09} ${barY + barH} L ${-s * 0.09} ${barY + barH} L ${-w2 + footW} ${h2} L ${-w2} ${h2} Z M 0 ${-h2 * 0.45} L ${s * 0.12} ${barY - 2} L ${-s * 0.12} ${barY - 2} Z" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><text x="0" y="5" font-family="Space Grotesk, Inter, sans-serif" font-weight="800" font-size="22" text-anchor="middle" dominant-baseline="middle" fill="currentColor">A</text></svg>`
+  },
+
+  letter_h: {
+    id: "letter_h",
+    name: "Letter H",
+    category: "typographic",
+    draw(ctx, size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const colW = s * 0.16;
+      const barH = s * 0.14;
+      ctx.beginPath();
+      ctx.moveTo(-w2, -h2);
+      ctx.lineTo(-w2 + colW, -h2);
+      ctx.lineTo(-w2 + colW, -barH / 2);
+      ctx.lineTo(w2 - colW, -barH / 2);
+      ctx.lineTo(w2 - colW, -h2);
+      ctx.lineTo(w2, -h2);
+      ctx.lineTo(w2, h2);
+      ctx.lineTo(w2 - colW, h2);
+      ctx.lineTo(w2 - colW, barH / 2);
+      ctx.lineTo(-w2 + colW, barH / 2);
+      ctx.lineTo(-w2 + colW, h2);
+      ctx.lineTo(-w2, h2);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const colW = s * 0.16;
+      const barH = s * 0.14;
+      return `<polygon points="${-w2},${-h2} ${-w2 + colW},${-h2} ${-w2 + colW},${-barH / 2} ${w2 - colW},${-barH / 2} ${w2 - colW},${-h2} ${w2},${-h2} ${w2},${h2} ${w2 - colW},${h2} ${w2 - colW},${barH / 2} ${-w2 + colW},${barH / 2} ${-w2 + colW},${h2} ${-w2},${h2}" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><text x="0" y="5" font-family="Space Grotesk, Inter, sans-serif" font-weight="800" font-size="22" text-anchor="middle" dominant-baseline="middle" fill="currentColor">H</text></svg>`
+  },
+
+  letter_z: {
+    id: "letter_z",
+    name: "Letter Z",
+    category: "typographic",
+    draw(ctx, size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const barH = s * 0.15;
+      const diagW = s * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(-w2, -h2);
+      ctx.lineTo(w2, -h2);
+      ctx.lineTo(w2, -h2 + barH);
+      ctx.lineTo(-w2 + diagW * 1.5, h2 - barH);
+      ctx.lineTo(w2, h2 - barH);
+      ctx.lineTo(w2, h2);
+      ctx.lineTo(-w2, h2);
+      ctx.lineTo(-w2, h2 - barH);
+      ctx.lineTo(w2 - diagW * 1.5, -h2 + barH);
+      ctx.lineTo(-w2, -h2 + barH);
+      ctx.closePath();
+    },
+    svgPath(size) {
+      const s = size;
+      const h2 = s * 0.46;
+      const w2 = s * 0.38;
+      const barH = s * 0.15;
+      const diagW = s * 0.18;
+      return `<polygon points="${-w2},${-h2} ${w2},${-h2} ${w2},${-h2 + barH} ${-w2 + diagW * 1.5},${h2 - barH} ${w2},${h2 - barH} ${w2},${h2} ${-w2},${h2} ${-w2},${h2 - barH} ${w2 - diagW * 1.5},${-h2 + barH} ${-w2},${-h2 + barH}" />`;
+    },
+    iconSvg: `<svg viewBox="-20 -20 40 40" class="w-4 h-4"><text x="0" y="5" font-family="Space Grotesk, Inter, sans-serif" font-weight="800" font-size="22" text-anchor="middle" dominant-baseline="middle" fill="currentColor">Z</text></svg>`
   },
 
   capsule: {

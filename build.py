@@ -28,7 +28,7 @@ def build():
         c_rw_renderer = f.read().replace('export const RealWorldRenderer =', 'const RealWorldRenderer =')
 
     with open(os.path.join(js_dir, 'studio', 'shapes.js')) as f:
-        c_shapes = f.read().replace('export const Shapes =', 'const Shapes =')
+        c_shapes = f.read().replace('export const Shapes =', 'const Shapes =').replace('export const STUDIO_SHAPE_KEYS =', 'const STUDIO_SHAPE_KEYS =')
 
     with open(os.path.join(js_dir, 'studio', 'studio-engine.js')) as f:
         c_engine = f.read()
@@ -82,6 +82,7 @@ def build():
     window.WongApp = WongApp;
     window.CanvasUtils = CanvasUtils;
     window.Shapes = Shapes;
+    window.STUDIO_SHAPE_KEYS = STUDIO_SHAPE_KEYS;
     window.realWorldCases = realWorldCases;
     window.chaptersContent = chaptersContent;
   }}

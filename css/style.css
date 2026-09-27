@@ -207,8 +207,8 @@ input:checked + .slider-toggle:before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -227,14 +227,28 @@ input:checked + .slider-toggle:before {
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
-/* Studio Matboard Frame */
-.studio-matboard {
-  background: var(--bg-card);
-  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border-color);
-  border-radius: 12px;
+/* Grid Structure Variation Icon Button */
+.grid-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
-[data-theme="dark"] .studio-matboard {
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-color);
+.grid-type-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+.grid-type-btn.active {
+  background: var(--text-primary);
+  color: var(--bg-card);
+  border-color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 /* Accordion transition helper */
