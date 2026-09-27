@@ -6918,6 +6918,29 @@ class WongApp {
       toggleFormBBtn.title = s.formB.enabled ? "Deactivate Form B" : "Activate Form B";
     }
 
+    const formBStatusBadge = document.getElementById("form-b-status-badge");
+    const formBControls = document.getElementById("form-b-controls");
+    const formBPicker = document.getElementById("form-b-shape-picker");
+    if (formBStatusBadge) {
+      formBStatusBadge.textContent = s.formB.enabled ? "Active" : "Inactive";
+      formBStatusBadge.className = s.formB.enabled
+        ? "text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        : "text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--border-color)] text-[var(--text-muted)]";
+    }
+    if (formBControls) {
+      if (s.formB.enabled) formBControls.classList.remove("opacity-40", "pointer-events-none");
+      else formBControls.classList.add("opacity-40", "pointer-events-none");
+    }
+    if (formBPicker) {
+      if (s.formB.enabled) formBPicker.classList.remove("opacity-40", "pointer-events-none");
+      else formBPicker.classList.add("opacity-40", "pointer-events-none");
+    }
+
+    const nameBadgeA = document.getElementById("form-a-name-badge");
+    if (nameBadgeA && Shapes[s.formA.shape]) {
+      nameBadgeA.textContent = Shapes[s.formA.shape].name;
+    }
+
     setVal("interrelation-select", s.interrelation);
 
     const repToggle = document.getElementById("mod-repetition-toggle");
@@ -7846,34 +7869,156 @@ class WongApp {
     const c = realWorldCases.find(item => item.id === this.currentRealWorldCaseId);
     if (!c) return;
 
+    const s = this.studioEngine.state;
+    const preset = this.currentRwPreset || c.presets[0];
+
+    // Reset all modifier enables first for a clean import
+    for (const modKey of Object.keys(s.modifiers)) {
+      if (s.modifiers[modKey] && typeof s.modifiers[modKey].enabled === "boolean") {
+        s.modifiers[modKey].enabled = false;
+      }
+    }
+
     if (c.id === "brandmarks") {
-      this.studioEngine.state.formA = this.currentRwPreset.formA || "circle";
-      this.studioEngine.state.formB = this.currentRwPreset.formB || "diamond";
-      this.studioEngine.state.interrelation = this.currentRwPreset.interrelation || "subtraction";
-      this.studioEngine.state.scaleA = this.currentRwPreset.scaleA || 130;
-      this.studioEngine.state.scaleB = this.currentRwPreset.scaleB || 90;
-      this.studioEngine.state.offsetX = this.currentRwPreset.offsetX || 30;
-      this.studioEngine.state.offsetY = this.currentRwPreset.offsetY || -10;
-      this.studioEngine.state.formBActive = true;
+      const shapeMap = {
+        "diamond": "rhombus",
+        "arch": "capsule"
+      };
+      const shapeA = shapeMap[preset.formA] || preset.formA || "circle";
+      const shapeB = shapeMap[preset.formB] || preset.formB || "rhombus";
+      const scaleA = preset.scaleA || 130;
+      const scaleB = preset.scaleB || 90;
+
+      s.formA.shape = Shapes[shapeA] ? shapeA : "circle";
+      s.formA.scale = scaleA;
+      s.formA.width = scaleA;
+      s.formA.height = scaleA;
+      s.formA.rotation = 0;
+      s.formA.offsetX = 0;
+      s.formA.offsetY = 0;
+
+      s.formB.enabled = true;
+      s.formB.shape = Shapes[shapeB] ? shapeB : "rhombus";
+      s.formB.scale = scaleB;
+      s.formB.width = scaleB;
+      s.formB.height = scaleB;
+      s.formB.rotation = preset.rotationB || 0;
+      s.formB.offsetX = preset.offsetX !== undefined ? preset.offsetX : 30;
+      s.formB.offsetY = preset.offsetY !== undefined ? preset.offsetY : -10;
+
+      s.interrelation = preset.interrelation || "subtraction";
+
       this.updateStudyCard("form");
+
     } else if (c.id === "swiss-poster") {
-      this.studioEngine.state.modifiers.radiation.enabled = true;
-      this.studioEngine.state.modifiers.radiation.scheme = this.currentRwPreset.type === "concentric" ? "concentric" : "spiral";
-      this.studioEngine.state.modifiers.radiation.rays = this.currentRwPreset.arms || 24;
+      s.formA.shape = "rect";
+      s.formA.scale = 70;
+      s.formA.width = 24;
+      s.formA.height = 70;
+      s.formA.rotation = 0;
+      s.formA.offsetX = 0;
+      s.formA.offsetY = 0;
+
+      s.formB.enabled = false;
+
+      s.modifiers.radiation.enabled = true;
+      s.modifiers.radiation.rays = preset.arms || 24;
+      s.modifiers.radiation.rings = Math.min(8, Math.max(3, Math.round((preset.density || 16) / 3)));
+
+      if (preset.type === "concentric") {
+        s.modifiers.radiation.scheme = "concentric";
+        s.modifiers.radiation.spiralTwist = 0;
+      } else if (preset.type === "sunburst") {
+        s.modifiers.radiation.scheme = "centrifugal";
+        s.modifiers.radiation.spiralTwist = 0;
+      } else {
+        s.modifiers.radiation.scheme = "spiral";
+        s.modifiers.radiation.spiralTwist = preset.curvature ? preset.curvature * 2 : 45;
+      }
+
       this.updateStudyCard("radiation");
+
     } else if (c.id === "patterns") {
-      this.studioEngine.state.modifiers.repetition.enabled = true;
-      this.studioEngine.state.modifiers.repetition.rows = this.currentRwPreset.rows || 5;
-      this.studioEngine.state.modifiers.repetition.cols = this.currentRwPreset.cols || 5;
+      const shapeMap = {
+        "quatrefoil": "cross",
+        "diamond-star": "rhombus",
+        "chevron": "triangle_eq"
+      };
+      const shapeA = shapeMap[preset.module] || preset.module || "cross";
+
+      s.formA.shape = Shapes[shapeA] ? shapeA : "cross";
+      const scale = preset.subUnitScale || 85;
+      s.formA.scale = scale;
+      s.formA.width = scale;
+      s.formA.height = scale;
+      s.formA.rotation = 0;
+      s.formA.offsetX = 0;
+      s.formA.offsetY = 0;
+
+      s.formB.enabled = false;
+
+      s.modifiers.repetition.enabled = true;
+      s.modifiers.repetition.rows = preset.rows || 5;
+      s.modifiers.repetition.cols = preset.cols || 5;
+
+      if (preset.gridType === "brick" || preset.gridType === "staggered") {
+        s.modifiers.repetition.gridType = "sliding";
+        s.modifiers.repetition.slideOffset = 0.5;
+      } else {
+        s.modifiers.repetition.gridType = "basic";
+      }
+
       this.updateStudyCard("repetition");
+
     } else if (c.id === "focal-hierarchy") {
-      this.studioEngine.state.modifiers.anomaly.enabled = true;
-      this.studioEngine.state.modifiers.anomaly.type = this.currentRwPreset.anomalyType || "scale";
-      this.studioEngine.state.modifiers.anomaly.intensity = this.currentRwPreset.intensity || 200;
-      this.updateStudyCard("anomaly");
+      s.formA.shape = "square";
+      s.formA.scale = 75;
+      s.formA.width = 75;
+      s.formA.height = 75;
+      s.formA.rotation = 0;
+      s.formA.offsetX = 0;
+      s.formA.offsetY = 0;
+
+      s.formB.enabled = false;
+
+      s.modifiers.repetition.enabled = true;
+      s.modifiers.repetition.rows = preset.gridRows || 8;
+      s.modifiers.repetition.cols = preset.gridCols || 8;
+      s.modifiers.repetition.gridType = "basic";
+
+      if (preset.anomalyType === "density" || preset.id === "gravitational-cluster") {
+        s.modifiers.concentration.enabled = true;
+        s.modifiers.concentration.mode = "point";
+        s.modifiers.concentration.attractorX = preset.epicenterX ?? 0.4;
+        s.modifiers.concentration.attractorY = preset.epicenterY ?? 0.6;
+        s.modifiers.concentration.power = 75;
+        s.modifiers.concentration.radius = 240;
+        s.modifiers.concentration.alignToField = true;
+        s.modifiers.concentration.densityScale = true;
+        this.updateStudyCard("concentration");
+      } else if (preset.anomalyType === "rotation") {
+        s.modifiers.anomaly.enabled = true;
+        s.modifiers.anomaly.type = "fracture";
+        s.modifiers.anomaly.epicenterX = preset.epicenterX ?? 0.5;
+        s.modifiers.anomaly.epicenterY = preset.epicenterY ?? 0.5;
+        s.modifiers.anomaly.intensity = 70;
+        s.modifiers.anomaly.radius = 180;
+        s.modifiers.anomaly.highlightColor = true;
+        this.updateStudyCard("anomaly");
+      } else {
+        s.modifiers.anomaly.enabled = true;
+        s.modifiers.anomaly.type = "focal";
+        s.modifiers.anomaly.epicenterX = preset.epicenterX ?? 0.65;
+        s.modifiers.anomaly.epicenterY = preset.epicenterY ?? 0.45;
+        s.modifiers.anomaly.intensity = 75;
+        s.modifiers.anomaly.radius = 180;
+        s.modifiers.anomaly.highlightColor = true;
+        this.updateStudyCard("anomaly");
+      }
     }
 
     this.syncStudioControlsFromState();
+    this.onModifierStateChanged();
     this.setMode("studio");
     this.showToast(`Imported ${c.title} into Studio Sandbox!`);
   }
