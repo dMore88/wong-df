@@ -1204,7 +1204,8 @@ class StudioEngine {
   // Draw illusory 3D spatial form (Chapter 12: Space)
   drawSpatialShape(ctx, shapeDef, size, fgColor, strokeOnly, lineWidth, bgColor, isAlternating, space) {
     const mode = space.mode || "isometric";
-    const depth = space.depth ?? 35;
+    const rawDepth = space.depth ?? 35;
+    const depth = rawDepth * Math.max(0.18, Math.min(1.4, size / 85));
     const angleRad = ((space.angle ?? 30) * Math.PI) / 180;
     const shading = (space.shading ?? 65) / 100;
 
@@ -1546,7 +1547,7 @@ class StudioEngine {
         if (!wireframe && interrelation === "overlapping") {
           // Clean border cut around Form B to clearly distinguish layering
           ctx.save();
-          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor, !isAlternating);
+          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor, !isAlternating, true);
           ctx.restore();
         }
 
@@ -1653,7 +1654,7 @@ class StudioEngine {
         ctx.save();
         ctx.translate(ox, oy);
         ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, bgColor, true, 2, bgColor, !isAlternating);
+        this.drawShape(ctx, formB.shape, rB, bgColor, true, 2, bgColor, !isAlternating, true);
         ctx.restore();
         break;
       }
@@ -2072,6 +2073,8 @@ class StudioEngine {
           }
         }
 
+        const baseScale = Math.min(cW, cH) * 0.45;
+        const normScale = (baseScale / 100) * cellScaleMul * concScaleMul;
         const isAlt = (r + c) % 2 === 1;
         this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
         ctx.restore();
