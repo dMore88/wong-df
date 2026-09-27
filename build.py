@@ -18,6 +18,15 @@ def build():
     with open(os.path.join(js_dir, 'data', 'chapters-content.js')) as f:
         c_content = f.read().replace('export const chaptersContent =', 'const chaptersContent =')
 
+    with open(os.path.join(js_dir, 'data', 'study-cards-data.js')) as f:
+        c_cards = f.read().replace('export const studyCardsData =', 'const studyCardsData =')
+
+    with open(os.path.join(js_dir, 'data', 'real-world-data.js')) as f:
+        c_real_cases = f.read().replace('export const realWorldCases =', 'const realWorldCases =')
+
+    with open(os.path.join(js_dir, 'real-world', 'real-world-renderer.js')) as f:
+        c_rw_renderer = f.read().replace('export const RealWorldRenderer =', 'const RealWorldRenderer =')
+
     with open(os.path.join(js_dir, 'studio', 'shapes.js')) as f:
         c_shapes = f.read().replace('export const Shapes =', 'const Shapes =')
 
@@ -53,6 +62,12 @@ def build():
   {c_utils}
 
   {c_content}
+
+  {c_cards}
+
+  {c_real_cases}
+
+  {c_rw_renderer}
 
   {c_shapes}
 

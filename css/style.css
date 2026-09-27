@@ -38,6 +38,18 @@
   padding: 0;
 }
 
+/* Core Application Views Display Guarantee */
+#studio-view,
+#theory-view,
+#real-world-view {
+  display: flex !important;
+}
+#studio-view.hidden,
+#theory-view.hidden,
+#real-world-view.hidden {
+  display: none !important;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);

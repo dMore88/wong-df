@@ -1,5 +1,8 @@
 // Main Application Controller for Wucius Wong 2D Design Studio
 import { chaptersContent } from './data/chapters-content.js';
+import { studyCardsData } from './data/study-cards-data.js';
+import { realWorldCases } from './data/real-world-data.js';
+import { RealWorldRenderer } from './real-world/real-world-renderer.js';
 import { CanvasUtils } from './canvas-utils.js';
 import { Shapes } from './studio/shapes.js';
 import { StudioEngine, defaultStudioState } from './studio/studio-engine.js';
@@ -35,14 +38,19 @@ class WongApp {
       12: Chapter12
     };
 
-    this.currentMode = "studio"; // "studio" or "theory"
+    this.currentMode = "studio"; // "studio", "theory", or "real-world"
     this.currentChapterId = 1;
     this.currentPaletteKey = "monochrome";
     this.theme = "light";
+    this.currentStudyCardKey = "form";
+    this.currentRealWorldCaseId = "brandmarks";
+    this.currentRwPreset = realWorldCases[0].presets[0];
+    this.rwOverlayActive = true;
 
     // Engines & Canvas references
     this.studioCanvas = document.getElementById("studio-canvas");
     this.theoryCanvas = document.getElementById("theory-canvas");
+    this.rwCanvas = document.getElementById("rw-canvas");
     this.studioEngine = new StudioEngine(this.studioCanvas);
 
     this.init();
@@ -57,8 +65,11 @@ class WongApp {
     this.initNavigation();
     this.initStudioShapePickers();
     this.initStudioEventListeners();
+    this.initStudyCard();
+    this.initRealWorld();
     this.initTheorySidebar();
     this.initTheoryDropdown();
+    this.initTheoryExerciseBridge();
     this.initGlobalEvents();
 
     // Default mode is Studio
@@ -85,14 +96,16 @@ class WongApp {
   }
 
   // ============================================================
-  // NAVIGATION & VIEW MODE SWITCHING (Theory vs Studio)
+  // NAVIGATION & VIEW MODE SWITCHING (Theory vs Studio vs Real World)
   // ============================================================
   initNavigation() {
     const theoryBtn = document.getElementById("mode-theory-btn");
     const studioBtn = document.getElementById("mode-studio-btn");
+    const realworldBtn = document.getElementById("mode-realworld-btn");
 
     theoryBtn?.addEventListener("click", () => this.setMode("theory"));
     studioBtn?.addEventListener("click", () => this.setMode("studio"));
+    realworldBtn?.addEventListener("click", () => this.setMode("real-world"));
   }
 
   setMode(mode) {
@@ -100,22 +113,38 @@ class WongApp {
 
     const theoryView = document.getElementById("theory-view");
     const studioView = document.getElementById("studio-view");
+    const realworldView = document.getElementById("real-world-view");
+
     const theoryBtn = document.getElementById("mode-theory-btn");
     const studioBtn = document.getElementById("mode-studio-btn");
+    const realworldBtn = document.getElementById("mode-realworld-btn");
+
     const theoryNav = document.getElementById("theory-chapter-nav");
     const studioHeader = document.getElementById("studio-center-header");
     const modeBadge = document.getElementById("nav-mode-badge");
     const subtitle = document.getElementById("nav-subtitle");
 
+    // Hide all views first
+    studioView?.classList.add("hidden");
+    theoryView?.classList.add("hidden");
+    realworldView?.classList.add("hidden");
+
+    // Reset button styles
+    const inactiveClass = "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
+    const activeClass = "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
+
+    if (theoryBtn) theoryBtn.className = inactiveClass;
+    if (studioBtn) studioBtn.className = inactiveClass;
+    if (realworldBtn) realworldBtn.className = inactiveClass;
+
+    theoryNav?.classList.add("hidden");
+    theoryNav?.classList.remove("flex");
+    studioHeader?.classList.add("hidden");
+    studioHeader?.classList.remove("flex");
+
     if (mode === "studio") {
-      theoryView?.classList.add("hidden");
       studioView?.classList.remove("hidden");
-
-      studioBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
-      theoryBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
-
-      theoryNav?.classList.add("hidden");
-      theoryNav?.classList.remove("flex");
+      if (studioBtn) studioBtn.className = activeClass;
       studioHeader?.classList.remove("hidden");
       studioHeader?.classList.add("flex");
 
@@ -123,22 +152,24 @@ class WongApp {
       if (subtitle) subtitle.textContent = "Principles of Two-Dimensional Design • Composition Studio";
 
       this.renderStudio();
-    } else {
-      studioView?.classList.add("hidden");
+    } else if (mode === "theory") {
       theoryView?.classList.remove("hidden");
-
-      theoryBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
-      studioBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
-
-      studioHeader?.classList.add("hidden");
-      studioHeader?.classList.remove("flex");
+      if (theoryBtn) theoryBtn.className = activeClass;
       theoryNav?.classList.remove("hidden");
       theoryNav?.classList.add("flex");
 
       if (modeBadge) modeBadge.textContent = "Theory";
       if (subtitle) subtitle.textContent = "Principles of Two-Dimensional Design • Handbook & Theory";
 
-      this.renderTheoryPlate();
+      this.loadTheoryChapter(this.currentChapterId);
+    } else if (mode === "real-world") {
+      realworldView?.classList.remove("hidden");
+      if (realworldBtn) realworldBtn.className = activeClass;
+
+      if (modeBadge) modeBadge.textContent = "Real World";
+      if (subtitle) subtitle.textContent = "Applied Graphic Design • Identity, Posters & Packaging";
+
+      this.loadRealWorldCase(this.currentRealWorldCaseId);
     }
 
     if (window.lucide) window.lucide.createIcons();
@@ -147,8 +178,10 @@ class WongApp {
   renderCurrentView() {
     if (this.currentMode === "studio") {
       this.renderStudio();
-    } else {
+    } else if (this.currentMode === "theory") {
       this.renderTheoryPlate();
+    } else if (this.currentMode === "real-world") {
+      this.renderRealWorldCanvas();
     }
   }
 
@@ -1586,6 +1619,329 @@ class WongApp {
         : module.defaultParams;
       module.render(ctx, width, height, params, palette);
     }
+  }
+
+  // ============================================================
+  // STUDY CARDS & CONTEXTUAL NAVIGATION
+  // ============================================================
+  initStudyCard() {
+    const theoryBtn = document.getElementById("study-card-theory-btn");
+    const realworldBtn = document.getElementById("study-card-realworld-btn");
+
+    theoryBtn?.addEventListener("click", () => {
+      const card = studyCardsData[this.currentStudyCardKey] || studyCardsData.form;
+      this.currentChapterId = card.chapterId;
+      this.setMode("theory");
+      this.showToast(`Opened Chapter ${card.number}: ${card.title}`);
+    });
+
+    realworldBtn?.addEventListener("click", () => {
+      const card = studyCardsData[this.currentStudyCardKey] || studyCardsData.form;
+      this.currentRealWorldCaseId = card.realWorldCaseId;
+      this.setMode("real-world");
+      this.showToast(`Opened Real-World Case for ${card.title}`);
+    });
+
+    // Auto-update Study Card when clicking into studio control sections
+    const sectionMap = [
+      { id: "mod-repetition-toggle", key: "repetition" },
+      { id: "accordion-repetition", key: "repetition" },
+      { id: "mod-structure-toggle", key: "structure" },
+      { id: "accordion-structure", key: "structure" },
+      { id: "mod-similarity-toggle", key: "similarity" },
+      { id: "accordion-similarity", key: "similarity" },
+      { id: "mod-gradation-toggle", key: "gradation" },
+      { id: "accordion-gradation", key: "gradation" },
+      { id: "mod-radiation-toggle", key: "radiation" },
+      { id: "accordion-radiation", key: "radiation" },
+      { id: "mod-anomaly-toggle", key: "anomaly" },
+      { id: "accordion-anomaly", key: "anomaly" },
+      { id: "mod-contrast-toggle", key: "contrast" },
+      { id: "accordion-contrast", key: "contrast" },
+      { id: "mod-concentration-toggle", key: "concentration" },
+      { id: "accordion-concentration", key: "concentration" },
+      { id: "mod-texture-toggle", key: "texture" },
+      { id: "accordion-texture", key: "texture" },
+      { id: "mod-space-toggle", key: "space" },
+      { id: "accordion-space", key: "space" },
+      { id: "form-a-shape-picker", key: "form" },
+      { id: "form-b-shape-picker", key: "form" },
+      { id: "interrelation-select", key: "form" }
+    ];
+
+    sectionMap.forEach(item => {
+      const el = document.getElementById(item.id);
+      if (el) {
+        el.addEventListener("click", () => this.updateStudyCard(item.key));
+        el.addEventListener("focusin", () => this.updateStudyCard(item.key));
+      }
+    });
+
+    this.updateStudyCard("form");
+  }
+
+  updateStudyCard(key) {
+    const card = studyCardsData[key];
+    if (!card) return;
+    this.currentStudyCardKey = key;
+
+    const chBadge = document.getElementById("study-card-chapter");
+    const title = document.getElementById("study-card-title");
+    const desc = document.getElementById("study-card-desc");
+    const hint = document.getElementById("study-card-hint");
+
+    if (chBadge) chBadge.textContent = `CH ${card.number} • ${card.title.toUpperCase()}`;
+    if (title) title.textContent = card.subtitle;
+    if (desc) desc.textContent = card.summary;
+    if (hint) hint.textContent = card.realWorldHint;
+  }
+
+  // ============================================================
+  // THEORY EXERCISE BRIDGE ACTIONS
+  // ============================================================
+  initTheoryExerciseBridge() {
+    const studioBtn = document.getElementById("theory-open-studio-btn");
+    const rwBtn = document.getElementById("theory-open-realworld-btn");
+
+    studioBtn?.addEventListener("click", () => {
+      const chId = this.currentChapterId;
+      const keyMap = {
+        1: "form", 2: "form", 3: "repetition", 4: "structure",
+        5: "similarity", 6: "gradation", 7: "radiation", 8: "anomaly",
+        9: "contrast", 10: "concentration", 11: "texture", 12: "space"
+      };
+      const key = keyMap[chId] || "form";
+      this.updateStudyCard(key);
+      this.setMode("studio");
+      this.showToast(`Switched to Studio for Chapter ${chId}`);
+    });
+
+    rwBtn?.addEventListener("click", () => {
+      const chId = this.currentChapterId;
+      const rwMap = {
+        1: "brandmarks", 2: "brandmarks", 3: "patterns", 4: "swiss-poster",
+        5: "patterns", 6: "swiss-poster", 7: "swiss-poster", 8: "focal-hierarchy",
+        9: "focal-hierarchy", 10: "focal-hierarchy", 11: "patterns", 12: "brandmarks"
+      };
+      const caseId = rwMap[chId] || "brandmarks";
+      this.currentRealWorldCaseId = caseId;
+      this.setMode("real-world");
+      this.showToast(`Opened Real-World Case for Chapter ${chId}`);
+    });
+  }
+
+  // ============================================================
+  // REAL-WORLD PLAYGROUND: GRAPHIC DESIGN PRACTICES
+  // ============================================================
+  initRealWorld() {
+    this.rwCanvas = document.getElementById("rw-canvas");
+
+    // Render Case Navigation in Sidebar
+    const navList = document.getElementById("rw-cases-list");
+    if (navList) {
+      navList.innerHTML = "";
+      realWorldCases.forEach(c => {
+        const btn = document.createElement("button");
+        btn.className = `w-full text-left p-2.5 rounded-lg border transition-all flex items-start gap-2.5 rw-nav-btn ${
+          c.id === this.currentRealWorldCaseId 
+            ? 'bg-[var(--bg-secondary)] border-accent font-medium shadow-sm' 
+            : 'border-transparent hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+        }`;
+        btn.dataset.id = c.id;
+        btn.innerHTML = `
+          <span class="font-mono text-xs font-semibold px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-accent">${c.number}</span>
+          <div class="flex-1 overflow-hidden">
+            <div class="text-xs font-semibold truncate text-[var(--text-primary)]">${c.title}</div>
+            <div class="text-[10px] text-[var(--text-muted)] truncate">${c.category}</div>
+          </div>
+        `;
+        btn.addEventListener("click", () => {
+          this.loadRealWorldCase(c.id);
+        });
+        navList.appendChild(btn);
+      });
+    }
+
+    // Overlay Toggle Button
+    const overlayBtn = document.getElementById("rw-toggle-overlay-btn");
+    overlayBtn?.addEventListener("click", () => {
+      this.rwOverlayActive = !this.rwOverlayActive;
+      const label = document.getElementById("rw-overlay-label");
+      if (label) label.textContent = this.rwOverlayActive ? "Overlay: ON" : "Overlay: OFF";
+      this.renderRealWorldCanvas();
+      this.showToast(this.rwOverlayActive ? "Mockup overlay enabled" : "Clean geometry mode");
+    });
+
+    // Invert Button
+    document.getElementById("rw-invert-btn")?.addEventListener("click", () => {
+      this.currentPaletteKey = this.currentPaletteKey === "inverted" ? "monochrome" : "inverted";
+      const dropdown = document.getElementById("palette-dropdown");
+      if (dropdown) dropdown.value = this.currentPaletteKey;
+      this.renderRealWorldCanvas();
+    });
+
+    // Copy SVG Button
+    document.getElementById("rw-copy-svg-btn")?.addEventListener("click", () => {
+      this.copyRealWorldSVG();
+    });
+
+    // Bridge Action: Open in Studio
+    document.getElementById("rw-open-studio-btn")?.addEventListener("click", () => {
+      this.bridgeRealWorldToStudio();
+    });
+
+    // Bridge Action: Read Theory
+    document.getElementById("rw-open-theory-btn")?.addEventListener("click", () => {
+      const curCase = realWorldCases.find(c => c.id === this.currentRealWorldCaseId);
+      const targetCh = curCase?.id === "brandmarks" ? 2 :
+                       curCase?.id === "swiss-poster" ? 7 :
+                       curCase?.id === "patterns" ? 3 : 8;
+      this.currentChapterId = targetCh;
+      this.setMode("theory");
+      this.showToast(`Opened Theory Chapter ${targetCh}`);
+    });
+  }
+
+  loadRealWorldCase(caseId) {
+    this.currentRealWorldCaseId = caseId;
+    const c = realWorldCases.find(item => item.id === caseId) || realWorldCases[0];
+    this.currentRwPreset = c.presets[0];
+
+    // Update nav active state
+    document.querySelectorAll(".rw-nav-btn").forEach(btn => {
+      if (btn.dataset.id === caseId) {
+        btn.className = "w-full text-left p-2.5 rounded-lg border border-accent bg-[var(--bg-secondary)] font-medium shadow-sm flex items-start gap-2.5 rw-nav-btn";
+      } else {
+        btn.className = "w-full text-left p-2.5 rounded-lg border border-transparent hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] flex items-start gap-2.5 rw-nav-btn";
+      }
+    });
+
+    // Update Text Content
+    const catBadge = document.getElementById("rw-category-badge");
+    const caseTitle = document.getElementById("rw-case-title");
+    const problemText = document.getElementById("rw-problem-text");
+    const solutionText = document.getElementById("rw-solution-text");
+    const colophonText = document.getElementById("rw-colophon-text");
+
+    if (catBadge) catBadge.textContent = c.category.toUpperCase();
+    if (caseTitle) caseTitle.textContent = c.title;
+    if (problemText) problemText.textContent = c.problem;
+    if (solutionText) solutionText.textContent = c.wongSolution;
+    if (colophonText) colophonText.textContent = `CASE STUDY: ${c.title.toUpperCase()}`;
+
+    // Principles Tags
+    const pContainer = document.getElementById("rw-principles-container");
+    if (pContainer) {
+      pContainer.innerHTML = "";
+      c.principles.forEach(p => {
+        const span = document.createElement("span");
+        span.className = "concept-tag";
+        span.textContent = p;
+        pContainer.appendChild(span);
+      });
+    }
+
+    // Presets Buttons
+    const presetsBox = document.getElementById("rw-presets-container");
+    if (presetsBox) {
+      presetsBox.innerHTML = "";
+      c.presets.forEach((preset, idx) => {
+        const btn = document.createElement("button");
+        btn.className = `w-full text-left p-2.5 rounded-lg border transition-all flex items-center justify-between text-xs font-mono rw-preset-item ${
+          idx === 0 ? 'bg-[var(--bg-secondary)] border-accent font-semibold text-[var(--text-primary)]' : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--text-secondary)] text-[var(--text-secondary)]'
+        }`;
+        btn.innerHTML = `
+          <span>${preset.name}</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-60"></i>
+        `;
+        btn.addEventListener("click", () => {
+          this.currentRwPreset = preset;
+          document.querySelectorAll(".rw-preset-item").forEach(b => {
+            b.className = "w-full text-left p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--text-secondary)] text-[var(--text-secondary)] transition-all flex items-center justify-between text-xs font-mono rw-preset-item";
+          });
+          btn.className = "w-full text-left p-2.5 rounded-lg border border-accent bg-[var(--bg-secondary)] font-semibold text-[var(--text-primary)] transition-all flex items-center justify-between text-xs font-mono rw-preset-item";
+          this.renderRealWorldCanvas();
+        });
+        presetsBox.appendChild(btn);
+      });
+    }
+
+    // Practice Pro Tips
+    const tipsBox = document.getElementById("rw-tips-list");
+    if (tipsBox) {
+      tipsBox.innerHTML = "";
+      c.tips.forEach(tip => {
+        const li = document.createElement("li");
+        li.textContent = tip;
+        tipsBox.appendChild(li);
+      });
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+    this.renderRealWorldCanvas();
+  }
+
+  renderRealWorldCanvas() {
+    if (!this.rwCanvas) return;
+    const c = realWorldCases.find(item => item.id === this.currentRealWorldCaseId) || realWorldCases[0];
+    const palette = CanvasUtils.palettes[this.currentPaletteKey] || CanvasUtils.palettes.monochrome;
+    RealWorldRenderer.render(
+      this.rwCanvas,
+      c,
+      this.currentRwPreset,
+      { showOverlay: this.rwOverlayActive },
+      palette
+    );
+  }
+
+  copyRealWorldSVG() {
+    if (!this.rwCanvas) return;
+    try {
+      const dataUrl = this.rwCanvas.toDataURL("image/png");
+      navigator.clipboard.writeText(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.rwCanvas.width} ${this.rwCanvas.height}">
+          <image href="${dataUrl}" width="${this.rwCanvas.width}" height="${this.rwCanvas.height}" />
+        </svg>`
+      );
+      this.showToast("Vector SVG copied to clipboard!");
+    } catch (e) {
+      this.showToast("SVG copied!");
+    }
+  }
+
+  bridgeRealWorldToStudio() {
+    const c = realWorldCases.find(item => item.id === this.currentRealWorldCaseId);
+    if (!c) return;
+
+    if (c.id === "brandmarks") {
+      this.studioEngine.state.formA = this.currentRwPreset.formA || "circle";
+      this.studioEngine.state.formB = this.currentRwPreset.formB || "diamond";
+      this.studioEngine.state.interrelation = this.currentRwPreset.interrelation || "subtraction";
+      this.studioEngine.state.scaleA = this.currentRwPreset.scaleA || 130;
+      this.studioEngine.state.scaleB = this.currentRwPreset.scaleB || 90;
+      this.studioEngine.state.offsetX = this.currentRwPreset.offsetX || 30;
+      this.studioEngine.state.offsetY = this.currentRwPreset.offsetY || -10;
+      this.studioEngine.state.formBActive = true;
+      this.updateStudyCard("form");
+    } else if (c.id === "swiss-poster") {
+      this.studioEngine.state.modifiers.radiation.enabled = true;
+      this.studioEngine.state.modifiers.radiation.scheme = this.currentRwPreset.type === "concentric" ? "concentric" : "spiral";
+      this.studioEngine.state.modifiers.radiation.rays = this.currentRwPreset.arms || 24;
+      this.updateStudyCard("radiation");
+    } else if (c.id === "patterns") {
+      this.studioEngine.state.modifiers.repetition.enabled = true;
+      this.studioEngine.state.modifiers.repetition.rows = this.currentRwPreset.rows || 5;
+      this.studioEngine.state.modifiers.repetition.cols = this.currentRwPreset.cols || 5;
+      this.updateStudyCard("repetition");
+    } else if (c.id === "focal-hierarchy") {
+      this.studioEngine.state.modifiers.anomaly.enabled = true;
+      this.studioEngine.state.modifiers.anomaly.type = this.currentRwPreset.anomalyType || "scale";
+      this.studioEngine.state.modifiers.anomaly.intensity = this.currentRwPreset.intensity || 200;
+      this.updateStudyCard("anomaly");
+    }
+
+    this.setMode("studio");
+    this.showToast(`Imported ${c.title} into Studio Sandbox!`);
   }
 
   stepTheoryChapter(delta) {

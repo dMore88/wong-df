@@ -624,6 +624,781 @@ const chaptersContent = [
 ];
 
 
+  // Study Cards Data: Concise visual grammar definitions connecting Studio with Theory and Real World
+const studyCardsData = {
+  form: {
+    chapterId: 2,
+    number: "02",
+    title: "Form & 8 Interrelations",
+    subtitle: "Figure-Ground & Spatial Operations",
+    summary: "Two forms meeting on a plane interact through 8 exact operations: detachment, touching, overlap, penetration, union, subtraction, intersection, and coincidence.",
+    realWorldHint: "The mathematical backbone for brandmarks, negative-space logos (FedEx, WWF) and iconography.",
+    realWorldCaseId: "brandmarks"
+  },
+  repetition: {
+    chapterId: 3,
+    number: "03",
+    title: "Repetition & Unit Forms",
+    subtitle: "Modular Harmony & Rhythm",
+    summary: "Repetition of unit forms, sub-units, and super-units creates instant visual unity, structural rhythm, and harmonious visual cadence.",
+    realWorldHint: "Essential for seamless brand patterns, packaging wraps, wallpaper rapport, and architectural tiles.",
+    realWorldCaseId: "patterns"
+  },
+  structure: {
+    chapterId: 4,
+    number: "04",
+    title: "Structure & Grids",
+    subtitle: "The Invisible Spatial Skeleton",
+    summary: "A structure governs spatial distribution and cell boundaries. It can be formal, semi-formal, or informal; active (clipping forms) or inactive (pure layout coordinates).",
+    realWorldHint: "The foundation of Swiss graphic design, responsive editorial grids, and multi-column web layouts.",
+    realWorldCaseId: "swiss-poster"
+  },
+  similarity: {
+    chapterId: 5,
+    number: "05",
+    title: "Similarity & Kinship",
+    subtitle: "Organic Unity Without Monotony",
+    summary: "Forms with visual kinship maintain common genetic traits while varying in size, proportion, or subtle distortion, avoiding mechanical rigidity.",
+    realWorldHint: "Used to build flexible corporate icon sets, dynamic branding families, and organic patterns.",
+    realWorldCaseId: "patterns"
+  },
+  gradation: {
+    chapterId: 6,
+    number: "06",
+    title: "Gradation & Progression",
+    subtitle: "Illusion of Depth & Movement",
+    summary: "Gradation is a systematic stepped progression in shape, size, rotation, or color, creating the optical sensation of acceleration, time, and spatial distance.",
+    realWorldHint: "Kinetic typography, motion graphics transitions, album art, and cosmetic packaging gradients.",
+    realWorldCaseId: "swiss-poster"
+  },
+  radiation: {
+    chapterId: 7,
+    number: "07",
+    title: "Radiation & Energy Fields",
+    subtitle: "Centrifugal & Vortex Schemes",
+    summary: "Radiation is optical energy emanating from or converging toward common focal centers, generating hypnotic rotational dynamics and Moiré patterns.",
+    realWorldHint: "Music festival posters, record sleeves, optical illusions, and guilloche security patterns.",
+    realWorldCaseId: "swiss-poster"
+  },
+  anomaly: {
+    chapterId: 8,
+    number: "08",
+    title: "Anomaly & Focal Epicenter",
+    subtitle: "The Intentional Rule-Breaker",
+    summary: "The deliberate violation of an established structural regularity. Anomaly instantly seizes psychological focus, transforming a monotonous surface into a narrative.",
+    realWorldHint: "Primary Call-to-Action (CTA) placement, editorial pull-quotes, and high-impact hero sections.",
+    realWorldCaseId: "focal-hierarchy"
+  },
+  contrast: {
+    chapterId: 9,
+    number: "09",
+    title: "Contrast & Dynamic Balance",
+    subtitle: "Asymmetry & Tension",
+    summary: "Contrast occurs when forms of opposing qualities (large vs small, curved vs angular, black vs white) interact, generating dramatic visual tension.",
+    realWorldHint: "Visual hierarchies in magazine covers, high-impact poster headlines, and editorial layouts.",
+    realWorldCaseId: "focal-hierarchy"
+  },
+  concentration: {
+    chapterId: 10,
+    number: "10",
+    title: "Concentration & Density",
+    subtitle: "Gravitational Fields & Voids",
+    summary: "Quantitative gathering of modules toward specific points, lines, or voids. Simulates gravitational fields, magnetic attraction, and organic swarming.",
+    realWorldHint: "Data visualization, generative branding assets, and ambient illustration backgrounds.",
+    realWorldCaseId: "focal-hierarchy"
+  },
+  texture: {
+    chapterId: 11,
+    number: "11",
+    title: "Texture & Surface Micro-Pattern",
+    subtitle: "Visual & Tactile Resonance",
+    summary: "Fine surface treatment that enriches flat 2D forms through halftone grids, decorative waves, or typographic micro-collages.",
+    realWorldHint: "Premium stationery embossing, luxury wine labels, apparel graphics, and packaging.",
+    realWorldCaseId: "patterns"
+  },
+  space: {
+    chapterId: 12,
+    number: "12",
+    title: "Space & Isometric Illusions",
+    subtitle: "Flat Surface vs Volumetric Depth",
+    summary: "The manipulation of axonometric angles, overlapping planes, and reversible figure-ground to create isometric volumes and optical paradoxes.",
+    realWorldHint: "3D brand marks, environmental signage, isometric infographics, and spatial branding.",
+    realWorldCaseId: "brandmarks"
+  }
+};
+
+
+  // Real-World Cases Data: Practical graphic design scenarios applying Wucius Wong's visual grammar
+const realWorldCases = [
+  {
+    id: "brandmarks",
+    number: "01",
+    title: "Brandmarks & Negative Space Monograms",
+    category: "Identity & Logo Design",
+    principles: ["Ch 02: Form Interrelations", "Ch 12: Positive/Negative Space"],
+    summary: "How subtraction, touching, and penetration produce iconic, memorable brand marks using negative-space Gestalt illusions (think FedEx arrow, WWF panda, Mobil logo).",
+    problem: "A client needs a distinctive, timeless brand mark that looks geometric and memorable without complex illustrative clutter.",
+    wongSolution: "Combine two elementary geometric primitives (circles, squares, shields) through Subtraction, Penetration, or Touching, leaving the brain to resolve the negative space.",
+    tips: [
+      "Subtraction cuts away an invisible silhouette from a solid figure, producing an unforgettable negative focal point.",
+      "Penetration creates transparent intersections where brand color overlays or secondary shapes emerge.",
+      "Touching achieves tension at the exact tangential point of contact without merging."
+    ],
+    presets: [
+      {
+        id: "gestalt-subtraction",
+        name: "Gestalt Cut (Circle - Diamond)",
+        formA: "circle",
+        formB: "diamond",
+        interrelation: "subtraction",
+        scaleA: 130,
+        scaleB: 90,
+        offsetX: 30,
+        offsetY: -10,
+        rotationB: 45
+      },
+      {
+        id: "tangent-touching",
+        name: "Tangential Contact (Twin Circles)",
+        formA: "circle",
+        formB: "circle",
+        interrelation: "touching",
+        scaleA: 110,
+        scaleB: 110,
+        offsetX: 110,
+        offsetY: 0,
+        rotationB: 0
+      },
+      {
+        id: "penetration-mark",
+        name: "Translucent Penetration (Arch & Hexagon)",
+        formA: "arch",
+        formB: "hexagon",
+        interrelation: "penetration",
+        scaleA: 120,
+        scaleB: 85,
+        offsetX: 40,
+        offsetY: 25,
+        rotationB: 30
+      }
+    ],
+    mockupType: "monogram"
+  },
+  {
+    id: "swiss-poster",
+    number: "02",
+    title: "Swiss Typographic Poster & Book Cover",
+    category: "Editorial & Cultural Posters",
+    principles: ["Ch 04: Structure & Grids", "Ch 07: Radiation", "Ch 06: Gradation"],
+    summary: "Combining Wong's mathematical radiation vortices and formal grids with classic Swiss International Typographic layout (Josef Müller-Brockmann style).",
+    problem: "Design an exhibition or festival poster that conveys intellectual rigor, hypnotic kinetic energy, and pristine editorial typography.",
+    wongSolution: "Generate an underlying centrifugal radiation or concentric wave field that directs visual torque outward, while asymmetric grotesque typography anchors the frame.",
+    tips: [
+      "Use radiation to generate directional optical energy, drawing the viewer in from across the room.",
+      "High-contrast monochrome gives maximum legibility and timeless editorial authority.",
+      "Let the geometric field bleed off edges while typographic titles sit precisely on invisible grid margins."
+    ],
+    presets: [
+      {
+        id: "vortex-exhibition",
+        name: "Centrifugal Vortex (Kunsthalle 1968)",
+        type: "vortex",
+        arms: 24,
+        curvature: 45,
+        density: 16,
+        themeText: "KUNSTHALLE ZÜRICH 1968\nINTERNATIONALE TYPOGRAFIE\nOKT 12 — NOV 24"
+      },
+      {
+        id: "concentric-ripple",
+        name: "Concentric Wave (Neue Grafik)",
+        type: "concentric",
+        arms: 18,
+        curvature: 10,
+        density: 22,
+        themeText: "NEUE GRAFIK • BAUHAUS WEIMAR\nFORM & STRUKTUR EXHIBIT\nZÜRICH • KUNSTMUSEUM"
+      },
+      {
+        id: "sunburst-festival",
+        name: "Sunburst Rays (Electronic Music Series)",
+        type: "sunburst",
+        arms: 32,
+        curvature: 0,
+        density: 14,
+        themeText: "MODULAR FREQUENCIES • 2026\nANNUAL SOUND ARCHIVE\nBERLIN • VOLKSBÜHNE"
+      }
+    ],
+    mockupType: "poster"
+  },
+  {
+    id: "patterns",
+    number: "03",
+    title: "Luxury Packaging & Brand Patterns",
+    category: "Surface & Packaging Design",
+    principles: ["Ch 03: Repetition", "Ch 05: Similarity", "Ch 11: Texture"],
+    summary: "Designing seamless brand patterns, packaging wraps, endpapers, and textiles using modular unit repetition, rotational reflection, and subtle similarity kinship.",
+    problem: "A luxury lifestyle or boutique brand needs an extensible graphic pattern for premium box packaging, tissue paper, and shopping bags.",
+    wongSolution: "Construct a primary unit form using sub-units with rotational symmetry (like the 'Meeting of 4 Circles'), then tile it across an active structural grid with alternating reflection.",
+    tips: [
+      "A 50% brick shift (half-drop / al tresbolillo) prevents linear eye tracking and creates a rich continuous fabric.",
+      "Subtle similarity variations (small changes in aperture or scale) keep large packaging surfaces organic.",
+      "Fine line weights with metallic/foil accents evoke luxury and understated elegance."
+    ],
+    presets: [
+      {
+        id: "meeting-of-4",
+        name: "Meeting of 4 Circles (Wong Classic)",
+        module: "quatrefoil",
+        gridType: "grid",
+        rows: 5,
+        cols: 5,
+        spacing: 0,
+        subUnitScale: 100
+      },
+      {
+        id: "brick-shift-diamonds",
+        name: "Half-Drop Diamond Lattice",
+        module: "diamond-star",
+        gridType: "brick",
+        rows: 6,
+        cols: 6,
+        spacing: 12,
+        subUnitScale: 85
+      },
+      {
+        id: "interlocking-chevrons",
+        name: "Interlocking Geometric Chevron",
+        module: "chevron",
+        gridType: "staggered",
+        rows: 7,
+        cols: 7,
+        spacing: 6,
+        subUnitScale: 90
+      }
+    ],
+    mockupType: "packaging"
+  },
+  {
+    id: "focal-hierarchy",
+    number: "04",
+    title: "Focal Hierarchy & High-Impact Hero",
+    category: "Digital Direction & Hero Layouts",
+    principles: ["Ch 08: Anomaly", "Ch 10: Concentration", "Ch 09: Contrast"],
+    summary: "Using structural anomaly and gravitational concentration to break layout monotony and direct the user's eye to high-priority calls to action.",
+    problem: "A landing page hero or editorial spread feels flat, repetitive, or lacks an unmistakable starting point for the viewer's gaze.",
+    wongSolution: "Distribute a calm, repetitive grid of modules, then introduce an intentional anomaly (scale expansion or tonal fracture) at the exact golden section or action point.",
+    tips: [
+      "An anomaly works ONLY if the background regular structure is sufficiently consistent to establish a rule.",
+      "Too many anomalies destroy hierarchy and create visual noise; exactly one strong anomaly creates an anchor.",
+      "Concentration fields simulate gravity, naturally leading the eye along vectors of density toward the key headline."
+    ],
+    presets: [
+      {
+        id: "scale-epicenter",
+        name: "Scale Anomaly at Golden Section",
+        anomalyType: "scale",
+        intensity: 220,
+        epicenterX: 0.65,
+        epicenterY: 0.45,
+        gridRows: 8,
+        gridCols: 8,
+        headline: "THE ATTENTION ANOMALY",
+        ctaText: "EXPLORE THE DISRUPTION"
+      },
+      {
+        id: "rotational-rupture",
+        name: "Rotational Twist Fracture",
+        anomalyType: "rotation",
+        intensity: 180,
+        epicenterX: 0.5,
+        epicenterY: 0.5,
+        gridRows: 7,
+        gridCols: 7,
+        headline: "STRUCTURAL FRACTURE",
+        ctaText: "BEGIN RECONSTRUCTION"
+      },
+      {
+        id: "gravitational-cluster",
+        name: "Concentration Gravity Well",
+        anomalyType: "density",
+        intensity: 250,
+        epicenterX: 0.4,
+        epicenterY: 0.6,
+        gridRows: 9,
+        gridCols: 9,
+        headline: "VISUAL GRAVITY FIELD",
+        ctaText: "DISCOVER THE CENTER"
+      }
+    ],
+    mockupType: "hero"
+  }
+];
+
+
+  // Real-World Graphic Design Renderer for Wucius Wong Design Studio
+const RealWorldRenderer = {
+  render(canvas, caseItem, preset, options, palette) {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || 600;
+    const height = rect.height || 600;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const isDark = palette && palette.isDark;
+    const bg = palette ? palette.bg : '#ffffff';
+    const fg = palette ? palette.fg : '#111111';
+    const accent = palette ? palette.accent : '#e11d48';
+
+    // Clear background
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    if (caseItem.id === 'brandmarks') {
+      this.renderBrandmark(ctx, width, height, preset, options, { bg, fg, accent, isDark });
+    } else if (caseItem.id === 'swiss-poster') {
+      this.renderSwissPoster(ctx, width, height, preset, options, { bg, fg, accent, isDark });
+    } else if (caseItem.id === 'patterns') {
+      this.renderPackagingPattern(ctx, width, height, preset, options, { bg, fg, accent, isDark });
+    } else if (caseItem.id === 'focal-hierarchy') {
+      this.renderFocalHero(ctx, width, height, preset, options, { bg, fg, accent, isDark });
+    }
+  },
+
+  // 1. BRANDMARKS & MONOGRAMS (Form Interrelations & Gestalt)
+  renderBrandmark(ctx, width, height, preset, options, colors) {
+    const cx = width / 2;
+    const cy = height / 2 - (options.showOverlay ? 25 : 0);
+    const scaleA = preset.scaleA || 120;
+    const scaleB = preset.scaleB || 90;
+    const offsetX = preset.offsetX || 35;
+    const offsetY = preset.offsetY || -15;
+    const interrelation = preset.interrelation || 'subtraction';
+
+    // Construction grid guidelines if overlay is active
+    if (options.showOverlay) {
+      ctx.save();
+      ctx.strokeStyle = colors.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+
+      // Crosshairs & concentric circles
+      ctx.beginPath();
+      ctx.moveTo(cx, 40); ctx.lineTo(cx, height - 70);
+      ctx.moveTo(40, cy); ctx.lineTo(width - 40, cy);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, scaleA, 0, Math.PI * 2);
+      ctx.arc(cx + offsetX, cy + offsetY, scaleB, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw Form A & Form B based on Interrelation
+    ctx.save();
+    if (interrelation === 'subtraction') {
+      // Form A solid, Form B cuts away with destination-out or composite
+      // We draw Form A
+      ctx.fillStyle = colors.fg;
+      this.drawShape(ctx, preset.formA || 'circle', cx, cy, scaleA, 0);
+
+      // Form B cuts out of Form A
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = '#000000';
+      this.drawShape(ctx, preset.formB || 'diamond', cx + offsetX, cy + offsetY, scaleB, (preset.rotationB || 0) * Math.PI / 180);
+      ctx.globalCompositeOperation = 'source-over';
+    } else if (interrelation === 'penetration') {
+      // Both forms drawn with semi-transparency and outline
+      ctx.fillStyle = colors.isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+      ctx.strokeStyle = colors.fg;
+      ctx.lineWidth = 3;
+
+      this.drawShape(ctx, preset.formA || 'arch', cx, cy, scaleA, 0);
+      ctx.stroke();
+
+      this.drawShape(ctx, preset.formB || 'hexagon', cx + offsetX, cy + offsetY, scaleB, (preset.rotationB || 0) * Math.PI / 180);
+      ctx.stroke();
+    } else if (interrelation === 'touching') {
+      // Contact at exactly one edge/point
+      ctx.fillStyle = colors.fg;
+      this.drawShape(ctx, preset.formA || 'circle', cx - scaleA / 2, cy, scaleA, 0);
+      this.drawShape(ctx, preset.formB || 'circle', cx + scaleB / 2, cy, scaleB, 0);
+    } else {
+      // Union
+      ctx.fillStyle = colors.fg;
+      this.drawShape(ctx, preset.formA || 'circle', cx, cy, scaleA, 0);
+      this.drawShape(ctx, preset.formB || 'diamond', cx + offsetX, cy + offsetY, scaleB, (preset.rotationB || 0) * Math.PI / 180);
+    }
+    ctx.restore();
+
+    // Typographic Monogram Label if overlay active
+    if (options.showOverlay) {
+      ctx.save();
+      ctx.fillStyle = colors.fg;
+      ctx.font = 'bold 13px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('STUDIO MONOGRAM • MARK Nº ' + (preset.id ? preset.id.toUpperCase() : '01'), cx, height - 45);
+
+      ctx.fillStyle = colors.accent;
+      ctx.font = '500 10px "JetBrains Mono", monospace';
+      ctx.fillText('GESTALT OPERATION: ' + interrelation.toUpperCase() + ' // RATIO ' + Math.round(scaleB/scaleA*100) + '%', cx, height - 28);
+      ctx.restore();
+    }
+  },
+
+  // 2. SWISS TYPOGRAPHIC POSTER (Radiation & Structural Grids)
+  renderSwissPoster(ctx, width, height, preset, options, colors) {
+    const cx = width / 2;
+    const cy = height / 2 + (options.showOverlay ? 15 : 0);
+    const arms = preset.arms || 24;
+    const curvature = preset.curvature || 35;
+    const density = preset.density || 16;
+    const maxR = Math.min(width, height) * 0.42;
+
+    ctx.save();
+    // Render dynamic vortex / radiation
+    for (let i = 0; i < arms; i++) {
+      const baseAngle = (i / arms) * Math.PI * 2;
+      ctx.beginPath();
+      for (let r = 15; r < maxR; r += 6) {
+        const twist = (r / maxR) * (curvature * Math.PI / 180);
+        const x = cx + Math.cos(baseAngle + twist) * r;
+        const y = cy + Math.sin(baseAngle + twist) * r;
+        if (r === 15) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = colors.fg;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+
+    // Concentric ripple rings
+    for (let j = 1; j <= 5; j++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, (maxR / 5) * j, 0, Math.PI * 2);
+      ctx.strokeStyle = colors.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Swiss International Typographic Header & Footer
+    if (options.showOverlay) {
+      ctx.save();
+      // Poster frame margin
+      ctx.strokeStyle = colors.fg;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(24, 24, width - 48, height - 48);
+
+      // Top Title Block
+      ctx.fillStyle = colors.fg;
+      ctx.font = 'bold 15px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('KUNSTHALLE ZÜRICH', 36, 52);
+
+      ctx.font = '500 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.accent;
+      ctx.fillText('1968 // RETROSPEKTIVE', 36, 68);
+
+      ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+      ctx.fillStyle = colors.fg;
+      ctx.textAlign = 'right';
+      ctx.fillText('INTERNATIONALE TYPOGRAFIE', width - 36, 52);
+      ctx.font = '400 10px "Inter", sans-serif';
+      ctx.fillText('HERBSTKURS OKT 12 — NOV 24', width - 36, 68);
+
+      // Bottom Metadata
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 18px "Space Grotesk", sans-serif';
+      ctx.fillText('FORM & VORTEX RADIATON', 36, height - 52);
+
+      ctx.font = '400 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.isDark ? '#a1a1aa' : '#71717a';
+      ctx.fillText('CANONICAL 2D VECTOR GRAMMAR // WUCIUS WONG', 36, height - 36);
+
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 14px "Space Grotesk", sans-serif';
+      ctx.fillStyle = colors.fg;
+      ctx.fillText('SERIE Nº 07', width - 36, height - 44);
+      ctx.restore();
+    }
+  },
+
+  // 3. PACKAGING & BRAND PATTERNS (Repetition, Similarity & Texture)
+  renderPackagingPattern(ctx, width, height, preset, options, colors) {
+    const rows = preset.rows || 6;
+    const cols = preset.cols || 6;
+    const cellW = (width - 60) / cols;
+    const cellH = (height - (options.showOverlay ? 120 : 60)) / rows;
+    const startX = 30 + cellW / 2;
+    const startY = (options.showOverlay ? 70 : 30) + cellH / 2;
+    const module = preset.module || 'quatrefoil';
+    const isBrick = preset.gridType === 'brick';
+
+    ctx.save();
+    for (let r = 0; r < rows; r++) {
+      const rowShift = (isBrick && r % 2 === 1) ? cellW / 2 : 0;
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * cellW + rowShift;
+        const y = startY + r * cellH;
+        if (x > width - 20) continue;
+
+        // Draw individual rapport unit
+        ctx.fillStyle = colors.fg;
+        const modSize = Math.min(cellW, cellH) * 0.42;
+
+        if (module === 'quatrefoil') {
+          // Classic Wong "Meeting of 4 Circles"
+          const rSub = modSize * 0.45;
+          ctx.beginPath();
+          ctx.arc(x - rSub, y, rSub, 0, Math.PI * 2);
+          ctx.arc(x + rSub, y, rSub, 0, Math.PI * 2);
+          ctx.arc(x, y - rSub, rSub, 0, Math.PI * 2);
+          ctx.arc(x, y + rSub, rSub, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = colors.bg;
+          ctx.beginPath();
+          ctx.arc(x, y, rSub * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (module === 'diamond-star') {
+          this.drawDiamondStar(ctx, x, y, modSize, colors.fg);
+        } else {
+          // Chevron
+          this.drawChevron(ctx, x, y, modSize, colors.fg);
+        }
+      }
+    }
+    ctx.restore();
+
+    // Luxury Packaging Presentation Wrap
+    if (options.showOverlay) {
+      ctx.save();
+      // Outer luxury frame
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+
+      // Centered Boutique Emblem Box
+      const badgeW = 260;
+      const badgeH = 50;
+      const bx = (width - badgeW) / 2;
+      const by = 28;
+
+      ctx.fillStyle = colors.bg;
+      ctx.strokeStyle = colors.fg;
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(bx, by, badgeW, badgeH);
+      ctx.strokeRect(bx, by, badgeW, badgeH);
+
+      ctx.fillStyle = colors.fg;
+      ctx.font = 'bold 12px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ATELIER MAISON • N° 03', width / 2, by + 22);
+
+      ctx.font = '500 9px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.accent;
+      ctx.fillText('SEAMLESS REPETITION // RAPPORT 100%', width / 2, by + 37);
+      ctx.restore();
+    }
+  },
+
+  // 4. FOCAL HIERARCHY & HERO (Anomaly & Concentration)
+  renderFocalHero(ctx, width, height, preset, options, colors) {
+    const rows = preset.gridRows || 8;
+    const cols = preset.gridCols || 8;
+    const epX = (preset.epicenterX || 0.65) * width;
+    const epY = (preset.epicenterY || 0.45) * height;
+    const cellW = width / (cols + 1);
+    const cellH = (height - (options.showOverlay ? 100 : 0)) / (rows + 1);
+
+    ctx.save();
+    for (let r = 1; r <= rows; r++) {
+      for (let c = 1; c <= cols; c++) {
+        const x = c * cellW;
+        const y = (options.showOverlay ? 50 : 0) + r * cellH;
+
+        const dist = Math.hypot(x - epX, y - epY);
+        const maxDist = Math.hypot(width, height) * 0.45;
+        const factor = Math.max(0, 1 - dist / maxDist);
+
+        let size = 14;
+        let rot = 0;
+        let isAnomaly = false;
+
+        if (dist < 45) {
+          isAnomaly = true;
+          size = 32;
+          rot = Math.PI / 4;
+        } else if (factor > 0) {
+          if (preset.anomalyType === 'rotation') {
+            rot = factor * Math.PI;
+          } else {
+            size = 14 + factor * 14;
+          }
+        }
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+
+        if (isAnomaly) {
+          ctx.fillStyle = colors.accent;
+          ctx.fillRect(-size/2, -size/2, size, size);
+        } else {
+          ctx.fillStyle = colors.fg;
+          ctx.beginPath();
+          ctx.arc(0, 0, size/2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+
+    // Digital Editorial UI Overlay (Headline & CTA)
+    if (options.showOverlay) {
+      ctx.save();
+      // Target Reticle around Anomaly
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(epX, epY, 36, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Connecting pointer line
+      ctx.beginPath();
+      ctx.moveTo(epX + 38, epY);
+      ctx.lineTo(epX + 75, epY - 20);
+      ctx.lineTo(epX + 160, epY - 20);
+      ctx.stroke();
+
+      ctx.fillStyle = colors.accent;
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('PRIMARY EYE ANCHOR', epX + 78, epY - 26);
+
+      // Hero Headline Bottom Card
+      const cardW = width - 48;
+      const cardH = 80;
+      const cardX = 24;
+      const cardY = height - 100;
+
+      ctx.setLineDash([]);
+      ctx.fillStyle = colors.isDark ? 'rgba(18,18,21,0.92)' : 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = colors.isDark ? '#27272a' : '#e4e4e7';
+      ctx.lineWidth = 1;
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+      ctx.fillStyle = colors.fg;
+      ctx.font = 'bold 16px "Space Grotesk", sans-serif';
+      ctx.fillText(preset.headline || 'THE ATTENTION ANOMALY', cardX + 18, cardY + 30);
+
+      ctx.font = '400 11px "Inter", sans-serif';
+      ctx.fillStyle = colors.isDark ? '#a1a1aa' : '#71717a';
+      ctx.fillText('Breaking structural uniformity to command the user eye path in 0.4 seconds.', cardX + 18, cardY + 50);
+
+      // Mini CTA button in card
+      const btnW = 140;
+      const btnH = 32;
+      const btnX = cardX + cardW - btnW - 18;
+      const btnY = cardY + 24;
+
+      ctx.fillStyle = colors.accent;
+      ctx.fillRect(btnX, btnY, btnW, btnH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(preset.ctaText || 'EXPLORE NOW →', btnX + btnW / 2, btnY + 20);
+      ctx.restore();
+    }
+  },
+
+  // Helper Geometric Primitives
+  drawShape(ctx, shape, x, y, size, rotation) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+
+    if (shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (shape === 'diamond') {
+      ctx.beginPath();
+      ctx.moveTo(0, -size / 2);
+      ctx.lineTo(size / 2, 0);
+      ctx.lineTo(0, size / 2);
+      ctx.lineTo(-size / 2, 0);
+      ctx.closePath();
+      ctx.fill();
+    } else if (shape === 'arch') {
+      const r = size / 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, Math.PI, 0, false);
+      ctx.lineTo(r, r);
+      ctx.lineTo(-r, r);
+      ctx.closePath();
+      ctx.fill();
+    } else if (shape === 'hexagon') {
+      const r = size / 2;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const hx = Math.cos(a) * r;
+        const hy = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(hx, hy);
+        else ctx.lineTo(hx, hy);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.fillRect(-size / 2, -size / 2, size, size);
+    }
+    ctx.restore();
+  },
+
+  drawDiamondStar(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo(0, -size / 2);
+    ctx.quadraticCurveTo(0, 0, size / 2, 0);
+    ctx.quadraticCurveTo(0, 0, 0, size / 2);
+    ctx.quadraticCurveTo(0, 0, -size / 2, 0);
+    ctx.quadraticCurveTo(0, 0, 0, -size / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  },
+
+  drawChevron(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo(-size/2, -size/3);
+    ctx.lineTo(0, size/3);
+    ctx.lineTo(size/2, -size/3);
+    ctx.lineTo(size/3, -size/3);
+    ctx.lineTo(0, size/6);
+    ctx.lineTo(-size/3, -size/3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+};
+
+
   // Shape definitions and drawing procedures for Wucius Wong Design Studio
 
 const Shapes = {
@@ -5001,6 +5776,9 @@ const Chapter12 = {
 
 
 
+
+
+
 // Import all 12 Two-Dimensional Chapter Modules (for Theory reference plate)
 
 
@@ -5032,14 +5810,19 @@ class WongApp {
       12: Chapter12
     };
 
-    this.currentMode = "studio"; // "studio" or "theory"
+    this.currentMode = "studio"; // "studio", "theory", or "real-world"
     this.currentChapterId = 1;
     this.currentPaletteKey = "monochrome";
     this.theme = "light";
+    this.currentStudyCardKey = "form";
+    this.currentRealWorldCaseId = "brandmarks";
+    this.currentRwPreset = realWorldCases[0].presets[0];
+    this.rwOverlayActive = true;
 
     // Engines & Canvas references
     this.studioCanvas = document.getElementById("studio-canvas");
     this.theoryCanvas = document.getElementById("theory-canvas");
+    this.rwCanvas = document.getElementById("rw-canvas");
     this.studioEngine = new StudioEngine(this.studioCanvas);
 
     this.init();
@@ -5054,8 +5837,11 @@ class WongApp {
     this.initNavigation();
     this.initStudioShapePickers();
     this.initStudioEventListeners();
+    this.initStudyCard();
+    this.initRealWorld();
     this.initTheorySidebar();
     this.initTheoryDropdown();
+    this.initTheoryExerciseBridge();
     this.initGlobalEvents();
 
     // Default mode is Studio
@@ -5082,14 +5868,16 @@ class WongApp {
   }
 
   // ============================================================
-  // NAVIGATION & VIEW MODE SWITCHING (Theory vs Studio)
+  // NAVIGATION & VIEW MODE SWITCHING (Theory vs Studio vs Real World)
   // ============================================================
   initNavigation() {
     const theoryBtn = document.getElementById("mode-theory-btn");
     const studioBtn = document.getElementById("mode-studio-btn");
+    const realworldBtn = document.getElementById("mode-realworld-btn");
 
     theoryBtn?.addEventListener("click", () => this.setMode("theory"));
     studioBtn?.addEventListener("click", () => this.setMode("studio"));
+    realworldBtn?.addEventListener("click", () => this.setMode("real-world"));
   }
 
   setMode(mode) {
@@ -5097,22 +5885,38 @@ class WongApp {
 
     const theoryView = document.getElementById("theory-view");
     const studioView = document.getElementById("studio-view");
+    const realworldView = document.getElementById("real-world-view");
+
     const theoryBtn = document.getElementById("mode-theory-btn");
     const studioBtn = document.getElementById("mode-studio-btn");
+    const realworldBtn = document.getElementById("mode-realworld-btn");
+
     const theoryNav = document.getElementById("theory-chapter-nav");
     const studioHeader = document.getElementById("studio-center-header");
     const modeBadge = document.getElementById("nav-mode-badge");
     const subtitle = document.getElementById("nav-subtitle");
 
+    // Hide all views first
+    studioView?.classList.add("hidden");
+    theoryView?.classList.add("hidden");
+    realworldView?.classList.add("hidden");
+
+    // Reset button styles
+    const inactiveClass = "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
+    const activeClass = "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
+
+    if (theoryBtn) theoryBtn.className = inactiveClass;
+    if (studioBtn) studioBtn.className = inactiveClass;
+    if (realworldBtn) realworldBtn.className = inactiveClass;
+
+    theoryNav?.classList.add("hidden");
+    theoryNav?.classList.remove("flex");
+    studioHeader?.classList.add("hidden");
+    studioHeader?.classList.remove("flex");
+
     if (mode === "studio") {
-      theoryView?.classList.add("hidden");
       studioView?.classList.remove("hidden");
-
-      studioBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
-      theoryBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
-
-      theoryNav?.classList.add("hidden");
-      theoryNav?.classList.remove("flex");
+      if (studioBtn) studioBtn.className = activeClass;
       studioHeader?.classList.remove("hidden");
       studioHeader?.classList.add("flex");
 
@@ -5120,22 +5924,24 @@ class WongApp {
       if (subtitle) subtitle.textContent = "Principles of Two-Dimensional Design • Composition Studio";
 
       this.renderStudio();
-    } else {
-      studioView?.classList.add("hidden");
+    } else if (mode === "theory") {
       theoryView?.classList.remove("hidden");
-
-      theoryBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--bg-card)] text-[var(--text-primary)] font-medium shadow-sm transition-all";
-      studioBtn.className = "flex items-center gap-1.5 px-3 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all";
-
-      studioHeader?.classList.add("hidden");
-      studioHeader?.classList.remove("flex");
+      if (theoryBtn) theoryBtn.className = activeClass;
       theoryNav?.classList.remove("hidden");
       theoryNav?.classList.add("flex");
 
       if (modeBadge) modeBadge.textContent = "Theory";
       if (subtitle) subtitle.textContent = "Principles of Two-Dimensional Design • Handbook & Theory";
 
-      this.renderTheoryPlate();
+      this.loadTheoryChapter(this.currentChapterId);
+    } else if (mode === "real-world") {
+      realworldView?.classList.remove("hidden");
+      if (realworldBtn) realworldBtn.className = activeClass;
+
+      if (modeBadge) modeBadge.textContent = "Real World";
+      if (subtitle) subtitle.textContent = "Applied Graphic Design • Identity, Posters & Packaging";
+
+      this.loadRealWorldCase(this.currentRealWorldCaseId);
     }
 
     if (window.lucide) window.lucide.createIcons();
@@ -5144,8 +5950,10 @@ class WongApp {
   renderCurrentView() {
     if (this.currentMode === "studio") {
       this.renderStudio();
-    } else {
+    } else if (this.currentMode === "theory") {
       this.renderTheoryPlate();
+    } else if (this.currentMode === "real-world") {
+      this.renderRealWorldCanvas();
     }
   }
 
@@ -6583,6 +7391,329 @@ class WongApp {
         : module.defaultParams;
       module.render(ctx, width, height, params, palette);
     }
+  }
+
+  // ============================================================
+  // STUDY CARDS & CONTEXTUAL NAVIGATION
+  // ============================================================
+  initStudyCard() {
+    const theoryBtn = document.getElementById("study-card-theory-btn");
+    const realworldBtn = document.getElementById("study-card-realworld-btn");
+
+    theoryBtn?.addEventListener("click", () => {
+      const card = studyCardsData[this.currentStudyCardKey] || studyCardsData.form;
+      this.currentChapterId = card.chapterId;
+      this.setMode("theory");
+      this.showToast(`Opened Chapter ${card.number}: ${card.title}`);
+    });
+
+    realworldBtn?.addEventListener("click", () => {
+      const card = studyCardsData[this.currentStudyCardKey] || studyCardsData.form;
+      this.currentRealWorldCaseId = card.realWorldCaseId;
+      this.setMode("real-world");
+      this.showToast(`Opened Real-World Case for ${card.title}`);
+    });
+
+    // Auto-update Study Card when clicking into studio control sections
+    const sectionMap = [
+      { id: "mod-repetition-toggle", key: "repetition" },
+      { id: "accordion-repetition", key: "repetition" },
+      { id: "mod-structure-toggle", key: "structure" },
+      { id: "accordion-structure", key: "structure" },
+      { id: "mod-similarity-toggle", key: "similarity" },
+      { id: "accordion-similarity", key: "similarity" },
+      { id: "mod-gradation-toggle", key: "gradation" },
+      { id: "accordion-gradation", key: "gradation" },
+      { id: "mod-radiation-toggle", key: "radiation" },
+      { id: "accordion-radiation", key: "radiation" },
+      { id: "mod-anomaly-toggle", key: "anomaly" },
+      { id: "accordion-anomaly", key: "anomaly" },
+      { id: "mod-contrast-toggle", key: "contrast" },
+      { id: "accordion-contrast", key: "contrast" },
+      { id: "mod-concentration-toggle", key: "concentration" },
+      { id: "accordion-concentration", key: "concentration" },
+      { id: "mod-texture-toggle", key: "texture" },
+      { id: "accordion-texture", key: "texture" },
+      { id: "mod-space-toggle", key: "space" },
+      { id: "accordion-space", key: "space" },
+      { id: "form-a-shape-picker", key: "form" },
+      { id: "form-b-shape-picker", key: "form" },
+      { id: "interrelation-select", key: "form" }
+    ];
+
+    sectionMap.forEach(item => {
+      const el = document.getElementById(item.id);
+      if (el) {
+        el.addEventListener("click", () => this.updateStudyCard(item.key));
+        el.addEventListener("focusin", () => this.updateStudyCard(item.key));
+      }
+    });
+
+    this.updateStudyCard("form");
+  }
+
+  updateStudyCard(key) {
+    const card = studyCardsData[key];
+    if (!card) return;
+    this.currentStudyCardKey = key;
+
+    const chBadge = document.getElementById("study-card-chapter");
+    const title = document.getElementById("study-card-title");
+    const desc = document.getElementById("study-card-desc");
+    const hint = document.getElementById("study-card-hint");
+
+    if (chBadge) chBadge.textContent = `CH ${card.number} • ${card.title.toUpperCase()}`;
+    if (title) title.textContent = card.subtitle;
+    if (desc) desc.textContent = card.summary;
+    if (hint) hint.textContent = card.realWorldHint;
+  }
+
+  // ============================================================
+  // THEORY EXERCISE BRIDGE ACTIONS
+  // ============================================================
+  initTheoryExerciseBridge() {
+    const studioBtn = document.getElementById("theory-open-studio-btn");
+    const rwBtn = document.getElementById("theory-open-realworld-btn");
+
+    studioBtn?.addEventListener("click", () => {
+      const chId = this.currentChapterId;
+      const keyMap = {
+        1: "form", 2: "form", 3: "repetition", 4: "structure",
+        5: "similarity", 6: "gradation", 7: "radiation", 8: "anomaly",
+        9: "contrast", 10: "concentration", 11: "texture", 12: "space"
+      };
+      const key = keyMap[chId] || "form";
+      this.updateStudyCard(key);
+      this.setMode("studio");
+      this.showToast(`Switched to Studio for Chapter ${chId}`);
+    });
+
+    rwBtn?.addEventListener("click", () => {
+      const chId = this.currentChapterId;
+      const rwMap = {
+        1: "brandmarks", 2: "brandmarks", 3: "patterns", 4: "swiss-poster",
+        5: "patterns", 6: "swiss-poster", 7: "swiss-poster", 8: "focal-hierarchy",
+        9: "focal-hierarchy", 10: "focal-hierarchy", 11: "patterns", 12: "brandmarks"
+      };
+      const caseId = rwMap[chId] || "brandmarks";
+      this.currentRealWorldCaseId = caseId;
+      this.setMode("real-world");
+      this.showToast(`Opened Real-World Case for Chapter ${chId}`);
+    });
+  }
+
+  // ============================================================
+  // REAL-WORLD PLAYGROUND: GRAPHIC DESIGN PRACTICES
+  // ============================================================
+  initRealWorld() {
+    this.rwCanvas = document.getElementById("rw-canvas");
+
+    // Render Case Navigation in Sidebar
+    const navList = document.getElementById("rw-cases-list");
+    if (navList) {
+      navList.innerHTML = "";
+      realWorldCases.forEach(c => {
+        const btn = document.createElement("button");
+        btn.className = `w-full text-left p-2.5 rounded-lg border transition-all flex items-start gap-2.5 rw-nav-btn ${
+          c.id === this.currentRealWorldCaseId 
+            ? 'bg-[var(--bg-secondary)] border-accent font-medium shadow-sm' 
+            : 'border-transparent hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+        }`;
+        btn.dataset.id = c.id;
+        btn.innerHTML = `
+          <span class="font-mono text-xs font-semibold px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-accent">${c.number}</span>
+          <div class="flex-1 overflow-hidden">
+            <div class="text-xs font-semibold truncate text-[var(--text-primary)]">${c.title}</div>
+            <div class="text-[10px] text-[var(--text-muted)] truncate">${c.category}</div>
+          </div>
+        `;
+        btn.addEventListener("click", () => {
+          this.loadRealWorldCase(c.id);
+        });
+        navList.appendChild(btn);
+      });
+    }
+
+    // Overlay Toggle Button
+    const overlayBtn = document.getElementById("rw-toggle-overlay-btn");
+    overlayBtn?.addEventListener("click", () => {
+      this.rwOverlayActive = !this.rwOverlayActive;
+      const label = document.getElementById("rw-overlay-label");
+      if (label) label.textContent = this.rwOverlayActive ? "Overlay: ON" : "Overlay: OFF";
+      this.renderRealWorldCanvas();
+      this.showToast(this.rwOverlayActive ? "Mockup overlay enabled" : "Clean geometry mode");
+    });
+
+    // Invert Button
+    document.getElementById("rw-invert-btn")?.addEventListener("click", () => {
+      this.currentPaletteKey = this.currentPaletteKey === "inverted" ? "monochrome" : "inverted";
+      const dropdown = document.getElementById("palette-dropdown");
+      if (dropdown) dropdown.value = this.currentPaletteKey;
+      this.renderRealWorldCanvas();
+    });
+
+    // Copy SVG Button
+    document.getElementById("rw-copy-svg-btn")?.addEventListener("click", () => {
+      this.copyRealWorldSVG();
+    });
+
+    // Bridge Action: Open in Studio
+    document.getElementById("rw-open-studio-btn")?.addEventListener("click", () => {
+      this.bridgeRealWorldToStudio();
+    });
+
+    // Bridge Action: Read Theory
+    document.getElementById("rw-open-theory-btn")?.addEventListener("click", () => {
+      const curCase = realWorldCases.find(c => c.id === this.currentRealWorldCaseId);
+      const targetCh = curCase?.id === "brandmarks" ? 2 :
+                       curCase?.id === "swiss-poster" ? 7 :
+                       curCase?.id === "patterns" ? 3 : 8;
+      this.currentChapterId = targetCh;
+      this.setMode("theory");
+      this.showToast(`Opened Theory Chapter ${targetCh}`);
+    });
+  }
+
+  loadRealWorldCase(caseId) {
+    this.currentRealWorldCaseId = caseId;
+    const c = realWorldCases.find(item => item.id === caseId) || realWorldCases[0];
+    this.currentRwPreset = c.presets[0];
+
+    // Update nav active state
+    document.querySelectorAll(".rw-nav-btn").forEach(btn => {
+      if (btn.dataset.id === caseId) {
+        btn.className = "w-full text-left p-2.5 rounded-lg border border-accent bg-[var(--bg-secondary)] font-medium shadow-sm flex items-start gap-2.5 rw-nav-btn";
+      } else {
+        btn.className = "w-full text-left p-2.5 rounded-lg border border-transparent hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] flex items-start gap-2.5 rw-nav-btn";
+      }
+    });
+
+    // Update Text Content
+    const catBadge = document.getElementById("rw-category-badge");
+    const caseTitle = document.getElementById("rw-case-title");
+    const problemText = document.getElementById("rw-problem-text");
+    const solutionText = document.getElementById("rw-solution-text");
+    const colophonText = document.getElementById("rw-colophon-text");
+
+    if (catBadge) catBadge.textContent = c.category.toUpperCase();
+    if (caseTitle) caseTitle.textContent = c.title;
+    if (problemText) problemText.textContent = c.problem;
+    if (solutionText) solutionText.textContent = c.wongSolution;
+    if (colophonText) colophonText.textContent = `CASE STUDY: ${c.title.toUpperCase()}`;
+
+    // Principles Tags
+    const pContainer = document.getElementById("rw-principles-container");
+    if (pContainer) {
+      pContainer.innerHTML = "";
+      c.principles.forEach(p => {
+        const span = document.createElement("span");
+        span.className = "concept-tag";
+        span.textContent = p;
+        pContainer.appendChild(span);
+      });
+    }
+
+    // Presets Buttons
+    const presetsBox = document.getElementById("rw-presets-container");
+    if (presetsBox) {
+      presetsBox.innerHTML = "";
+      c.presets.forEach((preset, idx) => {
+        const btn = document.createElement("button");
+        btn.className = `w-full text-left p-2.5 rounded-lg border transition-all flex items-center justify-between text-xs font-mono rw-preset-item ${
+          idx === 0 ? 'bg-[var(--bg-secondary)] border-accent font-semibold text-[var(--text-primary)]' : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--text-secondary)] text-[var(--text-secondary)]'
+        }`;
+        btn.innerHTML = `
+          <span>${preset.name}</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-60"></i>
+        `;
+        btn.addEventListener("click", () => {
+          this.currentRwPreset = preset;
+          document.querySelectorAll(".rw-preset-item").forEach(b => {
+            b.className = "w-full text-left p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--text-secondary)] text-[var(--text-secondary)] transition-all flex items-center justify-between text-xs font-mono rw-preset-item";
+          });
+          btn.className = "w-full text-left p-2.5 rounded-lg border border-accent bg-[var(--bg-secondary)] font-semibold text-[var(--text-primary)] transition-all flex items-center justify-between text-xs font-mono rw-preset-item";
+          this.renderRealWorldCanvas();
+        });
+        presetsBox.appendChild(btn);
+      });
+    }
+
+    // Practice Pro Tips
+    const tipsBox = document.getElementById("rw-tips-list");
+    if (tipsBox) {
+      tipsBox.innerHTML = "";
+      c.tips.forEach(tip => {
+        const li = document.createElement("li");
+        li.textContent = tip;
+        tipsBox.appendChild(li);
+      });
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+    this.renderRealWorldCanvas();
+  }
+
+  renderRealWorldCanvas() {
+    if (!this.rwCanvas) return;
+    const c = realWorldCases.find(item => item.id === this.currentRealWorldCaseId) || realWorldCases[0];
+    const palette = CanvasUtils.palettes[this.currentPaletteKey] || CanvasUtils.palettes.monochrome;
+    RealWorldRenderer.render(
+      this.rwCanvas,
+      c,
+      this.currentRwPreset,
+      { showOverlay: this.rwOverlayActive },
+      palette
+    );
+  }
+
+  copyRealWorldSVG() {
+    if (!this.rwCanvas) return;
+    try {
+      const dataUrl = this.rwCanvas.toDataURL("image/png");
+      navigator.clipboard.writeText(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.rwCanvas.width} ${this.rwCanvas.height}">
+          <image href="${dataUrl}" width="${this.rwCanvas.width}" height="${this.rwCanvas.height}" />
+        </svg>`
+      );
+      this.showToast("Vector SVG copied to clipboard!");
+    } catch (e) {
+      this.showToast("SVG copied!");
+    }
+  }
+
+  bridgeRealWorldToStudio() {
+    const c = realWorldCases.find(item => item.id === this.currentRealWorldCaseId);
+    if (!c) return;
+
+    if (c.id === "brandmarks") {
+      this.studioEngine.state.formA = this.currentRwPreset.formA || "circle";
+      this.studioEngine.state.formB = this.currentRwPreset.formB || "diamond";
+      this.studioEngine.state.interrelation = this.currentRwPreset.interrelation || "subtraction";
+      this.studioEngine.state.scaleA = this.currentRwPreset.scaleA || 130;
+      this.studioEngine.state.scaleB = this.currentRwPreset.scaleB || 90;
+      this.studioEngine.state.offsetX = this.currentRwPreset.offsetX || 30;
+      this.studioEngine.state.offsetY = this.currentRwPreset.offsetY || -10;
+      this.studioEngine.state.formBActive = true;
+      this.updateStudyCard("form");
+    } else if (c.id === "swiss-poster") {
+      this.studioEngine.state.modifiers.radiation.enabled = true;
+      this.studioEngine.state.modifiers.radiation.scheme = this.currentRwPreset.type === "concentric" ? "concentric" : "spiral";
+      this.studioEngine.state.modifiers.radiation.rays = this.currentRwPreset.arms || 24;
+      this.updateStudyCard("radiation");
+    } else if (c.id === "patterns") {
+      this.studioEngine.state.modifiers.repetition.enabled = true;
+      this.studioEngine.state.modifiers.repetition.rows = this.currentRwPreset.rows || 5;
+      this.studioEngine.state.modifiers.repetition.cols = this.currentRwPreset.cols || 5;
+      this.updateStudyCard("repetition");
+    } else if (c.id === "focal-hierarchy") {
+      this.studioEngine.state.modifiers.anomaly.enabled = true;
+      this.studioEngine.state.modifiers.anomaly.type = this.currentRwPreset.anomalyType || "scale";
+      this.studioEngine.state.modifiers.anomaly.intensity = this.currentRwPreset.intensity || 200;
+      this.updateStudyCard("anomaly");
+    }
+
+    this.setMode("studio");
+    this.showToast(`Imported ${c.title} into Studio Sandbox!`);
   }
 
   stepTheoryChapter(delta) {
