@@ -2427,6 +2427,7 @@ class StudioEngine {
       }
     }
 
+    ctx.restore();
   }
 
   // Build the boundary path for a cell in the given grid variation
