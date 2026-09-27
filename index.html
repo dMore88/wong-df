@@ -125,6 +125,22 @@
   <!-- 1. STUDIO VIEW: UNIFIED WORKBENCH & MODIFIER STACK           -->
   <!-- ============================================================ -->
   <div id="studio-view" class="flex flex-1 overflow-hidden">
+    <!-- LEFT SIDEBAR: ACTIVE STUDY CARDS FEED -->
+    <aside id="studio-study-cards-sidebar" class="w-72 md:w-80 border-r border-[var(--border-color)] bg-[var(--bg-card)] flex flex-col flex-shrink-0 z-20 overflow-hidden">
+      <div class="p-3 border-b border-[var(--border-color)] flex items-center justify-between text-xs text-[var(--text-muted)] font-mono uppercase tracking-wider">
+        <div class="flex items-center gap-1.5">
+          <span class="inline-block w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+          <span class="font-bold text-[var(--text-primary)]">Active Principles</span>
+        </div>
+        <span id="study-cards-count" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-color)] text-accent">1 Active</span>
+      </div>
+
+      <!-- Scrollable Cards Feed -->
+      <div id="studio-cards-feed" class="flex-1 overflow-y-auto p-3 space-y-3">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </aside>
+
     <!-- Center Canvas Workspace -->
     <main class="flex-1 flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 overflow-hidden relative canvas-wrapper">
       
@@ -137,8 +153,20 @@
             <span class="text-[11px] font-mono font-bold tracking-wider uppercase text-[var(--text-secondary)]">LIVE PREVIEW</span>
           </div>
 
-          <!-- Quick Canvas Actions -->
-          <div class="flex items-center gap-1">
+          <!-- Quick Canvas Actions: Aspect Ratio + Bounds + Invert + Reset + Copy -->
+          <div class="flex items-center gap-1.5">
+            <!-- Aspect Ratio Selector Dropdown -->
+            <div class="relative">
+              <select id="canvas-aspect-ratio" class="appearance-none bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[11px] font-mono font-medium py-1 pl-2.5 pr-7 rounded focus:outline-none focus:border-accent cursor-pointer text-[var(--text-primary)]" title="Canvas Aspect Ratio">
+                <option value="1:1" selected>1:1 Square</option>
+                <option value="9:16">9:16 Story</option>
+                <option value="4:3">4:3 Editorial</option>
+                <option value="3:4">3:4 Poster</option>
+                <option value="16:9">16:9 Cinematic</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-3 h-3 absolute right-2 top-2 pointer-events-none text-[var(--text-muted)]"></i>
+            </div>
+
             <button id="studio-bounds-toggle" class="p-1.5 rounded hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]" title="Toggle Safe Bounds Frame">
               <i data-lucide="frame" class="w-4 h-4"></i>
             </button>
@@ -156,7 +184,7 @@
 
         <!-- The Retina Crisp Canvas -->
         <div class="relative flex items-center justify-center overflow-hidden rounded border border-[var(--border-color)] bg-[var(--bg-card)]">
-          <canvas id="studio-canvas" width="600" height="600" class="block aspect-square max-h-[calc(100vh-220px)] md:max-h-[calc(100vh-200px)] max-w-full cursor-crosshair"></canvas>
+          <canvas id="studio-canvas" width="600" height="600" style="aspect-ratio: 1 / 1;" class="block max-h-[calc(100vh-220px)] md:max-h-[calc(100vh-200px)] max-w-full cursor-crosshair"></canvas>
         </div>
 
         <!-- Bottom Mat Colophon -->
@@ -164,8 +192,8 @@
           <div id="studio-colophon-text" class="tracking-wider">
             USED ON THIS DESIGN: FORM
           </div>
-          <div class="hidden sm:block">
-            1000 × 1000 PX • RETINA HiDPI
+          <div id="studio-resolution-text" class="hidden sm:block">
+            600 × 600 PX • RETINA HiDPI
           </div>
         </div>
       </div>
@@ -180,134 +208,111 @@
         <h2 class="font-display font-bold text-base text-[var(--text-primary)] tracking-tight">Generative Parameters</h2>
       </div>
 
-      <div class="p-4 space-y-6">
+      <div class="p-4 space-y-5">
         
-        <!-- DYNAMIC STUDY CARD HUD -->
-        <div id="study-card" class="p-3.5 rounded-xl border border-accent/30 bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-card)] shadow-sm transition-all">
-          <div class="flex items-center justify-between mb-1.5">
-            <div class="flex items-center gap-1.5">
-              <span class="inline-block w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-              <span id="study-card-chapter" class="text-[10px] font-mono font-bold tracking-wider text-accent uppercase">CH 02 • FORM & INTERRELATIONS</span>
-            </div>
-            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]">STUDY CARD</span>
-          </div>
-          
-          <h4 id="study-card-title" class="font-display font-bold text-xs text-[var(--text-primary)] mb-1">
-            8 Relational Operations
-          </h4>
-          
-          <p id="study-card-desc" class="text-[11px] text-[var(--text-secondary)] leading-relaxed mb-2">
-            Forms encounter each other through 8 spatial operations: detachment, touching, overlap, penetration, union, subtraction, intersection, and coincidence.
-          </p>
-
-          <div class="p-2 rounded bg-[var(--bg-card)] border border-[var(--border-color)] mb-3 text-[10px] text-[var(--text-secondary)] leading-snug">
-            <strong class="text-[var(--text-primary)] font-mono">Real-World Use:</strong>
-            <span id="study-card-hint" class="ml-1">The mathematical backbone for brandmarks, negative-space logos (FedEx, WWF) and iconography.</span>
-          </div>
-          
-          <div class="flex items-center gap-2 pt-2 border-t border-[var(--border-color)]">
-            <button id="study-card-theory-btn" class="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[11px] font-mono text-[var(--text-primary)] transition-all">
-              <i data-lucide="book-open" class="w-3 h-3 text-accent"></i>
-              <span>Theory</span>
-            </button>
-            <button id="study-card-realworld-btn" class="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[11px] font-mono text-[var(--text-primary)] transition-all">
-              <i data-lucide="briefcase" class="w-3 h-3 text-accent"></i>
-              <span>Real World</span>
-            </button>
-          </div>
-        </div>
-
         <!-- SECTION 1: FORM & INTERRELATIONS (MODULE) -->
-        <div class="space-y-4">
+        <div class="space-y-3.5">
           <div>
             <h3 class="font-display font-semibold text-xs text-[var(--text-primary)] tracking-tight">Form & Interrelations (Module)</h3>
             <p class="text-[11px] text-[var(--text-muted)]">Compose the foundational unit form</p>
           </div>
 
-          <!-- Form A Picker -->
-          <div class="space-y-2 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+          <!-- Shape A Card -->
+          <div class="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] space-y-2.5">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-mono font-medium text-[var(--text-primary)]">Form A</span>
-              <span id="form-a-name-badge" class="text-[10px] font-mono text-[var(--text-muted)]">Circle</span>
+              <span class="text-xs font-mono font-medium text-[var(--text-primary)]">Shape A</span>
+              <span id="form-a-name-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]">Circle</span>
             </div>
             
-            <!-- Shape Buttons Grid for Form A -->
-            <div id="form-a-shape-picker" class="flex flex-wrap gap-1.5 pt-1">
+            <!-- Shape Buttons Grid for Shape A -->
+            <div id="form-a-shape-picker" class="flex flex-wrap gap-1 pt-0.5">
               <!-- Dynamically injected -->
             </div>
 
-            <!-- Form A Parameters -->
-            <div class="space-y-2 pt-2 border-t border-[var(--border-color)] text-xs">
-              <div class="flex items-center justify-between">
-                <label class="text-[11px] text-[var(--text-secondary)]">Form A Scale</label>
-                <span id="val-form-a-scale" class="font-mono font-bold text-accent">110</span>
+            <!-- Shape A 2-Column Controls -->
+            <div class="pt-2 border-t border-[var(--border-color)] space-y-2 text-xs">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Width</label>
+                  <input type="number" id="input-form-a-width" class="num-input" value="110" min="20" max="300" step="2">
+                </div>
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Height</label>
+                  <input type="number" id="input-form-a-height" class="num-input" value="110" min="20" max="300" step="2">
+                </div>
               </div>
-              <input type="range" id="input-form-a-scale" min="30" max="220" step="2" value="110">
 
-              <div class="flex items-center justify-between pt-1">
-                <label class="text-[11px] text-[var(--text-secondary)]">Form A Rotation</label>
-                <span id="val-form-a-rotation" class="font-mono text-[var(--text-secondary)]">0°</span>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset X</label>
+                  <input type="number" id="input-form-a-offset-x" class="num-input" value="0" min="-250" max="250" step="2">
+                </div>
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset Y</label>
+                  <input type="number" id="input-form-a-offset-y" class="num-input" value="0" min="-250" max="250" step="2">
+                </div>
               </div>
-              <input type="range" id="input-form-a-rotation" min="0" max="360" step="5" value="0">
 
-              <div class="flex items-center justify-between pt-1">
-                <label class="text-[11px] text-[var(--text-secondary)]">Offset X</label>
-                <span id="val-form-a-offset-x" class="font-mono text-[var(--text-secondary)]">0px</span>
+              <div>
+                <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Rotation</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="input-form-a-rotation" class="num-input w-20 flex-shrink-0" value="0" min="0" max="360" step="5">
+                  <input type="range" id="input-form-a-rotation-slider" min="0" max="360" step="5" value="0" class="flex-1">
+                </div>
               </div>
-              <input type="range" id="input-form-a-offset-x" min="-180" max="180" step="2" value="0">
-
-              <div class="flex items-center justify-between pt-1">
-                <label class="text-[11px] text-[var(--text-secondary)]">Offset Y</label>
-                <span id="val-form-a-offset-y" class="font-mono text-[var(--text-secondary)]">0px</span>
-              </div>
-              <input type="range" id="input-form-a-offset-y" min="-180" max="180" step="2" value="0">
             </div>
           </div>
 
-          <!-- Form B Picker -->
-          <div class="space-y-2 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+          <!-- Shape B Card -->
+          <div class="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] space-y-2.5">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1.5">
-                <span class="text-xs font-mono font-medium text-[var(--text-primary)]">Form B</span>
+                <span class="text-xs font-mono font-medium text-[var(--text-primary)]">Shape B</span>
                 <span id="form-b-status-badge" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Active</span>
               </div>
               
-              <!-- Toggle / Clear Form B (+ to activate, - to deactivate) -->
+              <!-- Toggle / Clear Form B -->
               <button id="toggle-form-b-btn" class="p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-accent transition-colors" title="Deactivate Form B">
                 <i data-lucide="minus" class="w-3.5 h-3.5"></i>
               </button>
             </div>
 
-            <!-- Shape Buttons Grid for Form B -->
-            <div id="form-b-shape-picker" class="flex flex-wrap gap-1.5 pt-1">
+            <!-- Shape Buttons Grid for Shape B -->
+            <div id="form-b-shape-picker" class="flex flex-wrap gap-1 pt-0.5">
               <!-- Dynamically injected -->
             </div>
 
-            <!-- Form B Parameters -->
-            <div id="form-b-controls" class="space-y-2 pt-2 border-t border-[var(--border-color)] text-xs">
-              <div class="flex items-center justify-between">
-                <label class="text-[11px] text-[var(--text-secondary)]">Form B Scale</label>
-                <span id="val-form-b-scale" class="font-mono font-bold text-accent">100</span>
+            <!-- Shape B 2-Column Controls -->
+            <div id="form-b-controls" class="pt-2 border-t border-[var(--border-color)] space-y-2 text-xs">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Width</label>
+                  <input type="number" id="input-form-b-width" class="num-input" value="100" min="20" max="300" step="2">
+                </div>
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Height</label>
+                  <input type="number" id="input-form-b-height" class="num-input" value="100" min="20" max="300" step="2">
+                </div>
               </div>
-              <input type="range" id="input-form-b-scale" min="30" max="220" step="2" value="100">
 
-              <div class="flex items-center justify-between pt-1">
-                <label class="text-[11px] text-[var(--text-secondary)]">Form B Rotation</label>
-                <span id="val-form-b-rotation" class="font-mono text-[var(--text-secondary)]">0°</span>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset X</label>
+                  <input type="number" id="input-form-b-offset-x" class="num-input" value="65" min="-250" max="250" step="2">
+                </div>
+                <div>
+                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset Y</label>
+                  <input type="number" id="input-form-b-offset-y" class="num-input" value="0" min="-250" max="250" step="2">
+                </div>
               </div>
-              <input type="range" id="input-form-b-rotation" min="0" max="360" step="5" value="0">
 
-              <div class="flex items-center justify-between pt-1">
-                <label class="text-[11px] text-[var(--text-secondary)]">Offset X</label>
-                <span id="val-form-b-offset-x" class="font-mono text-[var(--text-secondary)]">65px</span>
+              <div>
+                <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Rotation</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="input-form-b-rotation" class="num-input w-20 flex-shrink-0" value="0" min="0" max="360" step="5">
+                  <input type="range" id="input-form-b-rotation-slider" min="0" max="360" step="5" value="0" class="flex-1">
+                </div>
               </div>
-              <input type="range" id="input-form-b-offset-x" min="-180" max="180" step="2" value="65">
-
-              <div class="flex items-center justify-between pt-1">
-                <label class="text-[11px] text-[var(--text-secondary)]">Offset Y</label>
-                <span id="val-form-b-offset-y" class="font-mono text-[var(--text-secondary)]">0px</span>
-              </div>
-              <input type="range" id="input-form-b-offset-y" min="-180" max="180" step="2" value="0">
             </div>
           </div>
 
@@ -342,10 +347,7 @@
           <!-- 1. REPETITION MODIFIER (Active in Phase 1) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Repetition</div>
-                <div class="text-[10px] text-[var(--text-muted)]">How visual systems establish rhythm</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Repetition</span>
               <label class="switch">
                 <input type="checkbox" id="mod-repetition-toggle">
                 <span class="slider-toggle"></span>
@@ -411,10 +413,7 @@
           <!-- 2. STRUCTURE (Chapter 4) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Structure</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Composing marks into relationships</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Structure</span>
               <label class="switch">
                 <input type="checkbox" id="mod-structure-toggle">
                 <span class="slider-toggle"></span>
@@ -477,10 +476,7 @@
           <!-- 3. SIMILARITY (Chapter 5) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Similarity</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Recognising patterns and families</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Similarity</span>
               <label class="switch">
                 <input type="checkbox" id="mod-similarity-toggle">
                 <span class="slider-toggle"></span>
@@ -543,10 +539,7 @@
           <!-- 4. GRADATION (Chapter 6) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Gradation</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Moving between visual states</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Gradation</span>
               <label class="switch">
                 <input type="checkbox" id="mod-gradation-toggle">
                 <span class="slider-toggle"></span>
@@ -619,10 +612,7 @@
           <!-- 5. RADIATION (Chapter 7) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Radiation</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Organising around a central point</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Radiation</span>
               <label class="switch">
                 <input type="checkbox" id="mod-radiation-toggle">
                 <span class="slider-toggle"></span>
@@ -688,10 +678,7 @@
           <!-- 6. ANOMALY (Chapter 8) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Anomaly</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Breaking regularity to create focus</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Anomaly</span>
               <label class="switch">
                 <input type="checkbox" id="mod-anomaly-toggle">
                 <span class="slider-toggle"></span>
@@ -792,10 +779,7 @@
           <!-- 7. CONTRAST (Chapter 9) -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Contrast</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Disparity, dominance and balance</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Contrast</span>
               <label class="switch">
                 <input type="checkbox" id="mod-contrast-toggle">
                 <span class="slider-toggle"></span>
@@ -881,10 +865,7 @@
           <!-- 8. CONCENTRATION -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Concentration</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Density, gathering & voids</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Concentration</span>
               <label class="switch">
                 <input type="checkbox" id="mod-concentration-toggle">
                 <span class="slider-toggle"></span>
@@ -986,10 +967,7 @@
           <!-- 9. TEXTURE -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Texture</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Surface grain & tactile raster</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Texture</span>
               <label class="switch">
                 <input type="checkbox" id="mod-texture-toggle">
                 <span class="slider-toggle"></span>
@@ -1055,10 +1033,7 @@
           <!-- 10. SPACE -->
           <div class="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200">
             <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-medium text-xs text-[var(--text-primary)]">Space</div>
-                <div class="text-[10px] text-[var(--text-muted)]">Positive, negative & illusory depth</div>
-              </div>
+              <span class="font-medium text-xs text-[var(--text-primary)]">Space</span>
               <label class="switch">
                 <input type="checkbox" id="mod-space-toggle">
                 <span class="slider-toggle"></span>

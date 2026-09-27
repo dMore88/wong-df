@@ -3,10 +3,13 @@ import { Shapes } from './shapes.js';
 import { CanvasUtils } from '../canvas-utils.js';
 
 export const defaultStudioState = {
+  aspectRatio: "1:1",
   // Primary Module Form A
   formA: {
     shape: "circle",
     scale: 110,
+    width: 110,
+    height: 110,
     rotation: 0,
     offsetX: 0,
     offsetY: 0
@@ -16,6 +19,8 @@ export const defaultStudioState = {
     enabled: true,
     shape: "square",
     scale: 100,
+    width: 100,
+    height: 100,
     rotation: 0,
     offsetX: 65,
     offsetY: 0
@@ -501,19 +506,48 @@ export class StudioEngine {
     const { formA, formB, interrelation } = this.state;
     const wireframe = wireframeOverride !== null ? wireframeOverride : this.state.wireframe;
     const shapeA = shapeOverrideA || formA.shape;
-    const rA = (customScaleA ?? formA.scale) * sizeMultiplier;
-    const rB = (customScaleB ?? formB.scale) * sizeMultiplier;
+
+    const baseWA = formA.width !== undefined ? formA.width : formA.scale;
+    const baseHA = formA.height !== undefined ? formA.height : formA.scale;
+    const baseWB = formB.width !== undefined ? formB.width : formB.scale;
+    const baseHB = formB.height !== undefined ? formB.height : formB.scale;
+
+    const wA = (customScaleA ? (customScaleA * (baseWA / (formA.scale || 100))) : baseWA) * sizeMultiplier;
+    const hA = (customScaleA ? (customScaleA * (baseHA / (formA.scale || 100))) : baseHA) * sizeMultiplier;
+    const wB = (customScaleB ? (customScaleB * (baseWB / (formB.scale || 100))) : baseWB) * sizeMultiplier;
+    const hB = (customScaleB ? (customScaleB * (baseHB / (formB.scale || 100))) : baseHB) * sizeMultiplier;
+
+    const rA = Math.max(wA, hA);
+    const rB = Math.max(wB, hB);
+    const sxA = rA > 0 ? wA / rA : 1;
+    const syA = rA > 0 ? hA / rA : 1;
+    const sxB = rB > 0 ? wB / rB : 1;
+    const syB = rB > 0 ? hB / rB : 1;
 
     const ax = (formA.offsetX || 0) * sizeMultiplier;
     const ay = (formA.offsetY || 0) * sizeMultiplier;
 
+    const drawFormA = (targetCtx, fg, bg, alt, wire = wireframe) => {
+      targetCtx.save();
+      targetCtx.translate(ax, ay);
+      targetCtx.rotate((formA.rotation * Math.PI) / 180);
+      targetCtx.scale(sxA, syA);
+      this.drawShape(targetCtx, shapeA, rA, fg, wire, 2, bg, alt);
+      targetCtx.restore();
+    };
+
+    const drawFormB = (targetCtx, fg, bg, alt, wire = wireframe, isCutout = false) => {
+      targetCtx.save();
+      targetCtx.translate(ox, oy);
+      targetCtx.rotate((formB.rotation * Math.PI) / 180);
+      targetCtx.scale(sxB, syB);
+      this.drawShape(targetCtx, formB.shape, rB, fg, wire, 2, bg, alt, isCutout);
+      targetCtx.restore();
+    };
+
     // If Form B is disabled, render just Form A
     if (!formB.enabled) {
-      ctx.save();
-      ctx.translate(ax, ay);
-      ctx.rotate((formA.rotation * Math.PI) / 180);
-      this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-      ctx.restore();
+      drawFormA(ctx, fgColor, bgColor, isAlternating);
       return;
     }
 
@@ -538,48 +572,21 @@ export class StudioEngine {
       case "detachment":
       case "touching":
       case "overlapping": {
-        // Draw Form A
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        // Draw Form B (if overlapping, add fine outline separation for clarity)
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
         if (!wireframe && interrelation === "overlapping") {
-          // Clean border cut around Form B to clearly distinguish layering
-          ctx.save();
-          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor, !isAlternating, true);
-          ctx.restore();
+          drawFormB(ctx, bgColor, bgColor, !isAlternating, true, true);
         }
-
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
-        ctx.restore();
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         break;
       }
 
       case "union": {
-        // Unified single silhouette
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
-        ctx.restore();
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         break;
       }
 
       case "subtraction": {
-        // Offscreen canvas technique to cut B out of A
         const pad = Math.max(rA, rB, Math.abs(ax), Math.abs(ay), Math.abs(ox), Math.abs(oy)) * 4 + 100;
         const offCanvas = document.createElement("canvas");
         offCanvas.width = pad;
@@ -589,16 +596,14 @@ export class StudioEngine {
         const cy = pad / 2;
 
         offCtx.save();
-        offCtx.translate(cx + ax, cy + ay);
-        offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe, 2, null, false, true);
+        offCtx.translate(cx, cy);
+        drawFormA(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         offCtx.save();
-        offCtx.translate(cx + ox, cy + oy);
-        offCtx.rotate((formB.rotation * Math.PI) / 180);
+        offCtx.translate(cx, cy);
         offCtx.globalCompositeOperation = "destination-out";
-        this.drawShape(offCtx, formB.shape, rB, fgColor, false, 2, null, false, true);
+        drawFormB(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         ctx.drawImage(offCanvas, -cx, -cy);
@@ -606,7 +611,6 @@ export class StudioEngine {
       }
 
       case "intersection": {
-        // Offscreen canvas technique: keep only overlap
         const pad = Math.max(rA, rB, Math.abs(ax), Math.abs(ay), Math.abs(ox), Math.abs(oy)) * 4 + 100;
         const offCanvas = document.createElement("canvas");
         offCanvas.width = pad;
@@ -616,16 +620,14 @@ export class StudioEngine {
         const cy = pad / 2;
 
         offCtx.save();
-        offCtx.translate(cx + ax, cy + ay);
-        offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe, 2, null, false, true);
+        offCtx.translate(cx, cy);
+        drawFormA(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         offCtx.save();
-        offCtx.translate(cx + ox, cy + oy);
-        offCtx.rotate((formB.rotation * Math.PI) / 180);
+        offCtx.translate(cx, cy);
         offCtx.globalCompositeOperation = "destination-in";
-        this.drawShape(offCtx, formB.shape, rB, fgColor, false, 2, null, false, true);
+        drawFormB(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         ctx.drawImage(offCanvas, -cx, -cy);
@@ -633,40 +635,29 @@ export class StudioEngine {
       }
 
       case "penetration": {
-        // Transparent overlap where intersecting area reverses or shows transparency
         ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-        ctx.globalAlpha = 0.55;
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
+        ctx.globalAlpha = 0.65;
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
 
       case "coincidence": {
-        // Form B perfectly aligned over Form A
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
         ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, bgColor, true, 2, bgColor, !isAlternating, true);
+        ctx.globalAlpha = 0.8;
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
+
+      default: {
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
+      }
     }
 
-    ctx.restore();
   }
 
   // Build the boundary path for a cell in the given grid variation

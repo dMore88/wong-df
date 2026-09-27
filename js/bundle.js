@@ -1772,10 +1772,13 @@ const Shapes = {
 
 
 const defaultStudioState = {
+  aspectRatio: "1:1",
   // Primary Module Form A
   formA: {
     shape: "circle",
     scale: 110,
+    width: 110,
+    height: 110,
     rotation: 0,
     offsetX: 0,
     offsetY: 0
@@ -1785,6 +1788,8 @@ const defaultStudioState = {
     enabled: true,
     shape: "square",
     scale: 100,
+    width: 100,
+    height: 100,
     rotation: 0,
     offsetX: 65,
     offsetY: 0
@@ -2270,19 +2275,48 @@ class StudioEngine {
     const { formA, formB, interrelation } = this.state;
     const wireframe = wireframeOverride !== null ? wireframeOverride : this.state.wireframe;
     const shapeA = shapeOverrideA || formA.shape;
-    const rA = (customScaleA ?? formA.scale) * sizeMultiplier;
-    const rB = (customScaleB ?? formB.scale) * sizeMultiplier;
+
+    const baseWA = formA.width !== undefined ? formA.width : formA.scale;
+    const baseHA = formA.height !== undefined ? formA.height : formA.scale;
+    const baseWB = formB.width !== undefined ? formB.width : formB.scale;
+    const baseHB = formB.height !== undefined ? formB.height : formB.scale;
+
+    const wA = (customScaleA ? (customScaleA * (baseWA / (formA.scale || 100))) : baseWA) * sizeMultiplier;
+    const hA = (customScaleA ? (customScaleA * (baseHA / (formA.scale || 100))) : baseHA) * sizeMultiplier;
+    const wB = (customScaleB ? (customScaleB * (baseWB / (formB.scale || 100))) : baseWB) * sizeMultiplier;
+    const hB = (customScaleB ? (customScaleB * (baseHB / (formB.scale || 100))) : baseHB) * sizeMultiplier;
+
+    const rA = Math.max(wA, hA);
+    const rB = Math.max(wB, hB);
+    const sxA = rA > 0 ? wA / rA : 1;
+    const syA = rA > 0 ? hA / rA : 1;
+    const sxB = rB > 0 ? wB / rB : 1;
+    const syB = rB > 0 ? hB / rB : 1;
 
     const ax = (formA.offsetX || 0) * sizeMultiplier;
     const ay = (formA.offsetY || 0) * sizeMultiplier;
 
+    const drawFormA = (targetCtx, fg, bg, alt, wire = wireframe) => {
+      targetCtx.save();
+      targetCtx.translate(ax, ay);
+      targetCtx.rotate((formA.rotation * Math.PI) / 180);
+      targetCtx.scale(sxA, syA);
+      this.drawShape(targetCtx, shapeA, rA, fg, wire, 2, bg, alt);
+      targetCtx.restore();
+    };
+
+    const drawFormB = (targetCtx, fg, bg, alt, wire = wireframe, isCutout = false) => {
+      targetCtx.save();
+      targetCtx.translate(ox, oy);
+      targetCtx.rotate((formB.rotation * Math.PI) / 180);
+      targetCtx.scale(sxB, syB);
+      this.drawShape(targetCtx, formB.shape, rB, fg, wire, 2, bg, alt, isCutout);
+      targetCtx.restore();
+    };
+
     // If Form B is disabled, render just Form A
     if (!formB.enabled) {
-      ctx.save();
-      ctx.translate(ax, ay);
-      ctx.rotate((formA.rotation * Math.PI) / 180);
-      this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-      ctx.restore();
+      drawFormA(ctx, fgColor, bgColor, isAlternating);
       return;
     }
 
@@ -2307,48 +2341,21 @@ class StudioEngine {
       case "detachment":
       case "touching":
       case "overlapping": {
-        // Draw Form A
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        // Draw Form B (if overlapping, add fine outline separation for clarity)
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
         if (!wireframe && interrelation === "overlapping") {
-          // Clean border cut around Form B to clearly distinguish layering
-          ctx.save();
-          this.drawShape(ctx, formB.shape, rB, bgColor, true, 3, bgColor, !isAlternating, true);
-          ctx.restore();
+          drawFormB(ctx, bgColor, bgColor, !isAlternating, true, true);
         }
-
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
-        ctx.restore();
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         break;
       }
 
       case "union": {
-        // Unified single silhouette
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
-        ctx.restore();
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         break;
       }
 
       case "subtraction": {
-        // Offscreen canvas technique to cut B out of A
         const pad = Math.max(rA, rB, Math.abs(ax), Math.abs(ay), Math.abs(ox), Math.abs(oy)) * 4 + 100;
         const offCanvas = document.createElement("canvas");
         offCanvas.width = pad;
@@ -2358,16 +2365,14 @@ class StudioEngine {
         const cy = pad / 2;
 
         offCtx.save();
-        offCtx.translate(cx + ax, cy + ay);
-        offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe, 2, null, false, true);
+        offCtx.translate(cx, cy);
+        drawFormA(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         offCtx.save();
-        offCtx.translate(cx + ox, cy + oy);
-        offCtx.rotate((formB.rotation * Math.PI) / 180);
+        offCtx.translate(cx, cy);
         offCtx.globalCompositeOperation = "destination-out";
-        this.drawShape(offCtx, formB.shape, rB, fgColor, false, 2, null, false, true);
+        drawFormB(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         ctx.drawImage(offCanvas, -cx, -cy);
@@ -2375,7 +2380,6 @@ class StudioEngine {
       }
 
       case "intersection": {
-        // Offscreen canvas technique: keep only overlap
         const pad = Math.max(rA, rB, Math.abs(ax), Math.abs(ay), Math.abs(ox), Math.abs(oy)) * 4 + 100;
         const offCanvas = document.createElement("canvas");
         offCanvas.width = pad;
@@ -2385,16 +2389,14 @@ class StudioEngine {
         const cy = pad / 2;
 
         offCtx.save();
-        offCtx.translate(cx + ax, cy + ay);
-        offCtx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(offCtx, shapeA, rA, fgColor, wireframe, 2, null, false, true);
+        offCtx.translate(cx, cy);
+        drawFormA(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         offCtx.save();
-        offCtx.translate(cx + ox, cy + oy);
-        offCtx.rotate((formB.rotation * Math.PI) / 180);
+        offCtx.translate(cx, cy);
         offCtx.globalCompositeOperation = "destination-in";
-        this.drawShape(offCtx, formB.shape, rB, fgColor, false, 2, null, false, true);
+        drawFormB(offCtx, fgColor, null, false, false);
         offCtx.restore();
 
         ctx.drawImage(offCanvas, -cx, -cy);
@@ -2402,40 +2404,29 @@ class StudioEngine {
       }
 
       case "penetration": {
-        // Transparent overlap where intersecting area reverses or shows transparency
         ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-        ctx.globalAlpha = 0.55;
-        this.drawShape(ctx, formB.shape, rB, fgColor, wireframe, 2, bgColor, !isAlternating);
+        ctx.globalAlpha = 0.65;
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
 
       case "coincidence": {
-        // Form B perfectly aligned over Form A
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
         ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate((formA.rotation * Math.PI) / 180);
-        this.drawShape(ctx, shapeA, rA, fgColor, wireframe, 2, bgColor, isAlternating);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.rotate((formB.rotation * Math.PI) / 180);
-        this.drawShape(ctx, formB.shape, rB, bgColor, true, 2, bgColor, !isAlternating, true);
+        ctx.globalAlpha = 0.8;
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
         ctx.restore();
         break;
       }
+
+      default: {
+        drawFormA(ctx, fgColor, bgColor, isAlternating);
+        drawFormB(ctx, fgColor, bgColor, !isAlternating);
+      }
     }
 
-    ctx.restore();
   }
 
   // Build the boundary path for a cell in the given grid variation
@@ -6007,82 +5998,105 @@ class WongApp {
   }
 
   initStudioEventListeners() {
-    // Form A Scale & Rotation
-    const scaleA = document.getElementById("input-form-a-scale");
-    const rotA = document.getElementById("input-form-a-rotation");
-    const valScaleA = document.getElementById("val-form-a-scale");
-    const valRotA = document.getElementById("val-form-a-rotation");
-
-    scaleA?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
-      this.studioEngine.state.formA.scale = v;
-      if (valScaleA) valScaleA.textContent = v;
-      this.renderStudio();
-    });
-
-    rotA?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
-      this.studioEngine.state.formA.rotation = v;
-      if (valRotA) valRotA.textContent = `${v}°`;
-      this.renderStudio();
-    });
-
-    // Form A Offsets
+    // Form A 2-Column Controls (Width, Height, Offset X, Offset Y, Rotation)
+    const widthA = document.getElementById("input-form-a-width");
+    const heightA = document.getElementById("input-form-a-height");
     const offXA = document.getElementById("input-form-a-offset-x");
     const offYA = document.getElementById("input-form-a-offset-y");
-    const valOffXA = document.getElementById("val-form-a-offset-x");
-    const valOffYA = document.getElementById("val-form-a-offset-y");
+    const rotA = document.getElementById("input-form-a-rotation");
+    const rotASlider = document.getElementById("input-form-a-rotation-slider");
+
+    widthA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 10;
+      this.studioEngine.state.formA.width = v;
+      this.studioEngine.state.formA.scale = Math.max(v, this.studioEngine.state.formA.height || v);
+      this.renderStudio();
+    });
+
+    heightA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 10;
+      this.studioEngine.state.formA.height = v;
+      this.studioEngine.state.formA.scale = Math.max(this.studioEngine.state.formA.width || v, v);
+      this.renderStudio();
+    });
 
     offXA?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
+      const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formA.offsetX = v;
-      if (valOffXA) valOffXA.textContent = `${v}px`;
       this.renderStudio();
     });
 
     offYA?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
+      const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formA.offsetY = v;
-      if (valOffYA) valOffYA.textContent = `${v}px`;
       this.renderStudio();
     });
 
-    // Form B Scale, Rotation, Offsets
-    const scaleB = document.getElementById("input-form-b-scale");
-    const rotB = document.getElementById("input-form-b-rotation");
-    const offX = document.getElementById("input-form-b-offset-x");
-    const offY = document.getElementById("input-form-b-offset-y");
-    const valScaleB = document.getElementById("val-form-b-scale");
-    const valRotB = document.getElementById("val-form-b-rotation");
-    const valOffX = document.getElementById("val-form-b-offset-x");
-    const valOffY = document.getElementById("val-form-b-offset-y");
+    rotA?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 0;
+      this.studioEngine.state.formA.rotation = v;
+      if (rotASlider) rotASlider.value = v;
+      this.renderStudio();
+    });
 
-    scaleB?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
-      this.studioEngine.state.formB.scale = v;
-      if (valScaleB) valScaleB.textContent = v;
+    rotASlider?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 0;
+      this.studioEngine.state.formA.rotation = v;
+      if (rotA) rotA.value = v;
+      this.renderStudio();
+    });
+
+    // Form B 2-Column Controls (Width, Height, Offset X, Offset Y, Rotation)
+    const widthB = document.getElementById("input-form-b-width");
+    const heightB = document.getElementById("input-form-b-height");
+    const offXB = document.getElementById("input-form-b-offset-x");
+    const offYB = document.getElementById("input-form-b-offset-y");
+    const rotB = document.getElementById("input-form-b-rotation");
+    const rotBSlider = document.getElementById("input-form-b-rotation-slider");
+
+    widthB?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 10;
+      this.studioEngine.state.formB.width = v;
+      this.studioEngine.state.formB.scale = Math.max(v, this.studioEngine.state.formB.height || v);
+      this.renderStudio();
+    });
+
+    heightB?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 10;
+      this.studioEngine.state.formB.height = v;
+      this.studioEngine.state.formB.scale = Math.max(this.studioEngine.state.formB.width || v, v);
+      this.renderStudio();
+    });
+
+    offXB?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 0;
+      this.studioEngine.state.formB.offsetX = v;
+      this.renderStudio();
+    });
+
+    offYB?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 0;
+      this.studioEngine.state.formB.offsetY = v;
       this.renderStudio();
     });
 
     rotB?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
+      const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formB.rotation = v;
-      if (valRotB) valRotB.textContent = `${v}°`;
+      if (rotBSlider) rotBSlider.value = v;
       this.renderStudio();
     });
 
-    offX?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
-      this.studioEngine.state.formB.offsetX = v;
-      if (valOffX) valOffX.textContent = `${v}px`;
+    rotBSlider?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 0;
+      this.studioEngine.state.formB.rotation = v;
+      if (rotB) rotB.value = v;
       this.renderStudio();
     });
 
-    offY?.addEventListener("input", (e) => {
-      const v = parseFloat(e.target.value);
-      this.studioEngine.state.formB.offsetY = v;
-      if (valOffY) valOffY.textContent = `${v}px`;
-      this.renderStudio();
+    // Aspect Ratio Selector
+    document.getElementById("canvas-aspect-ratio")?.addEventListener("change", (e) => {
+      this.setCanvasAspectRatio(e.target.value);
     });
 
     // Toggle Form B Enabled/Disabled (+ to add, - to remove)
@@ -6146,9 +6160,7 @@ class WongApp {
         repAccordion?.classList.add("hidden");
         this.showToast("Repetition Modifier Deactivated");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     // Repetition Grid Variation
@@ -6229,9 +6241,7 @@ class WongApp {
         structAccordion?.classList.add("hidden");
         this.showToast("Structure Modifier Deactivated");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("struct-mode")?.addEventListener("change", (e) => {
@@ -6298,9 +6308,7 @@ class WongApp {
         simAccordion?.classList.add("hidden");
         this.showToast("Similarity Modifier Deactivated");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("sim-kinship-type")?.addEventListener("change", (e) => {
@@ -6353,9 +6361,7 @@ class WongApp {
         gradAccordion?.classList.add("hidden");
         this.showToast("Gradation Modifier Deactivated");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("grad-type")?.addEventListener("change", (e) => {
@@ -6426,9 +6432,7 @@ class WongApp {
         radAccordion?.classList.add("hidden");
         this.showToast("Radiation Deactivated: Reverted to Base Study");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("rad-scheme")?.addEventListener("change", (e) => {
@@ -6500,9 +6504,7 @@ class WongApp {
         anomAccordion?.classList.add("hidden");
         this.showToast("Anomaly Deactivated: Regularity Restored");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("anom-type")?.addEventListener("change", (e) => {
@@ -6627,9 +6629,7 @@ class WongApp {
         contrastAccordion?.classList.add("hidden");
         this.showToast("Contrast Deactivated");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("contrast-dimension")?.addEventListener("change", (e) => {
@@ -6704,9 +6704,7 @@ class WongApp {
         concAccordion?.classList.add("hidden");
         this.showToast("Concentration Deactivated");
       }
-      this.updateModifierDependencyWarnings();
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("conc-mode")?.addEventListener("change", (e) => {
@@ -6794,8 +6792,7 @@ class WongApp {
         textAccordion?.classList.add("hidden");
         this.showToast("Texture Deactivated");
       }
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("text-target")?.addEventListener("change", (e) => {
@@ -6851,8 +6848,7 @@ class WongApp {
         spaceAccordion?.classList.add("hidden");
         this.showToast("Space Deactivated: Restored to Flat 2D Picture Plane");
       }
-      this.updateStudioColophon();
-      this.renderStudio();
+      this.onModifierStateChanged();
     });
 
     document.getElementById("space-mode")?.addEventListener("change", (e) => {
@@ -6930,23 +6926,21 @@ class WongApp {
       if (el) el.textContent = txt;
     };
 
-    setVal("input-form-a-scale", s.formA.scale);
-    setText("val-form-a-scale", s.formA.scale);
+    setVal("input-form-a-width", s.formA.width !== undefined ? s.formA.width : s.formA.scale);
+    setVal("input-form-a-height", s.formA.height !== undefined ? s.formA.height : s.formA.scale);
     setVal("input-form-a-rotation", s.formA.rotation);
-    setText("val-form-a-rotation", `${s.formA.rotation}°`);
+    setVal("input-form-a-rotation-slider", s.formA.rotation);
     setVal("input-form-a-offset-x", s.formA.offsetX || 0);
-    setText("val-form-a-offset-x", `${s.formA.offsetX || 0}px`);
     setVal("input-form-a-offset-y", s.formA.offsetY || 0);
-    setText("val-form-a-offset-y", `${s.formA.offsetY || 0}px`);
 
-    setVal("input-form-b-scale", s.formB.scale);
-    setText("val-form-b-scale", s.formB.scale);
+    setVal("input-form-b-width", s.formB.width !== undefined ? s.formB.width : s.formB.scale);
+    setVal("input-form-b-height", s.formB.height !== undefined ? s.formB.height : s.formB.scale);
     setVal("input-form-b-rotation", s.formB.rotation);
-    setText("val-form-b-rotation", `${s.formB.rotation}°`);
-    setVal("input-form-b-offset-x", s.formB.offsetX);
-    setText("val-form-b-offset-x", `${s.formB.offsetX}px`);
-    setVal("input-form-b-offset-y", s.formB.offsetY);
-    setText("val-form-b-offset-y", `${s.formB.offsetY}px`);
+    setVal("input-form-b-rotation-slider", s.formB.rotation);
+    setVal("input-form-b-offset-x", s.formB.offsetX || 0);
+    setVal("input-form-b-offset-y", s.formB.offsetY || 0);
+
+    this.setCanvasAspectRatio(s.aspectRatio || "1:1", false);
 
     const toggleFormBBtn = document.getElementById("toggle-form-b-btn");
     if (toggleFormBBtn) {
@@ -7183,6 +7177,7 @@ class WongApp {
     this.initStudioShapePickers();
     this.updateModifierDependencyWarnings();
     this.updateStudioColophon();
+    this.renderActiveStudyCards();
   }
 
   updateModifierDependencyWarnings() {
@@ -7252,6 +7247,43 @@ class WongApp {
     const colophon = document.getElementById("studio-colophon-text");
     if (colophon) {
       colophon.textContent = this.studioEngine.getColophonString();
+    }
+  }
+
+  onModifierStateChanged() {
+    this.updateModifierDependencyWarnings();
+    this.updateStudioColophon();
+    this.renderActiveStudyCards();
+    this.renderStudio();
+  }
+
+  setCanvasAspectRatio(ratio, notify = true) {
+    this.studioEngine.state.aspectRatio = ratio;
+    const ratioMap = {
+      "1:1": { css: "1 / 1", w: 600, h: 600, label: "1:1 SQUARE", res: "600 × 600 PX" },
+      "9:16": { css: "9 / 16", w: 450, h: 800, label: "9:16 STORY", res: "450 × 800 PX" },
+      "4:3": { css: "4 / 3", w: 800, h: 600, label: "4:3 EDITORIAL", res: "800 × 600 PX" },
+      "3:4": { css: "3 / 4", w: 600, h: 800, label: "3:4 POSTER", res: "600 × 800 PX" },
+      "16:9": { css: "16 / 9", w: 800, h: 450, label: "16:9 CINEMATIC", res: "800 × 450 PX" }
+    };
+    const cfg = ratioMap[ratio] || ratioMap["1:1"];
+    if (this.studioCanvas) {
+      this.studioCanvas.style.aspectRatio = cfg.css;
+      this.studioCanvas.width = cfg.w;
+      this.studioCanvas.height = cfg.h;
+    }
+    const selectEl = document.getElementById("canvas-aspect-ratio");
+    if (selectEl && selectEl.value !== ratio) {
+      selectEl.value = ratio;
+    }
+    const resEl = document.getElementById("studio-resolution-text");
+    if (resEl) {
+      resEl.textContent = `${cfg.res} • RETINA HiDPI`;
+    }
+    this.updateStudioColophon();
+    this.renderStudio();
+    if (notify) {
+      this.showToast(`Canvas Aspect Ratio: ${cfg.label}`);
     }
   }
 
@@ -7394,27 +7426,10 @@ class WongApp {
   }
 
   // ============================================================
-  // STUDY CARDS & CONTEXTUAL NAVIGATION
+  // STUDY CARDS & CONTEXTUAL NAVIGATION (LEFT FEED)
   // ============================================================
   initStudyCard() {
-    const theoryBtn = document.getElementById("study-card-theory-btn");
-    const realworldBtn = document.getElementById("study-card-realworld-btn");
-
-    theoryBtn?.addEventListener("click", () => {
-      const card = studyCardsData[this.currentStudyCardKey] || studyCardsData.form;
-      this.currentChapterId = card.chapterId;
-      this.setMode("theory");
-      this.showToast(`Opened Chapter ${card.number}: ${card.title}`);
-    });
-
-    realworldBtn?.addEventListener("click", () => {
-      const card = studyCardsData[this.currentStudyCardKey] || studyCardsData.form;
-      this.currentRealWorldCaseId = card.realWorldCaseId;
-      this.setMode("real-world");
-      this.showToast(`Opened Real-World Case for ${card.title}`);
-    });
-
-    // Auto-update Study Card when clicking into studio control sections
+    // Auto-scroll or highlight card when focusing or clicking on control sections
     const sectionMap = [
       { id: "mod-repetition-toggle", key: "repetition" },
       { id: "accordion-repetition", key: "repetition" },
@@ -7449,7 +7464,147 @@ class WongApp {
       }
     });
 
-    this.updateStudyCard("form");
+    this.renderActiveStudyCards();
+  }
+
+  renderActiveStudyCards() {
+    const feed = document.getElementById("studio-cards-feed");
+    const countBadge = document.getElementById("study-cards-count");
+    if (!feed) return;
+
+    const modifierKeys = [
+      "repetition",
+      "structure",
+      "similarity",
+      "gradation",
+      "radiation",
+      "anomaly",
+      "contrast",
+      "concentration",
+      "texture",
+      "space"
+    ];
+
+    // Always include Form & Interrelations (Chapter 2)
+    const activeKeys = ["form"];
+    for (const key of modifierKeys) {
+      if (this.studioEngine?.state?.modifiers?.[key]?.enabled) {
+        activeKeys.push(key);
+      }
+    }
+
+    if (countBadge) {
+      countBadge.textContent = `${activeKeys.length} Active`;
+    }
+
+    feed.innerHTML = activeKeys.map(key => {
+      const card = studyCardsData[key];
+      if (!card) return "";
+
+      const isBase = key === "form";
+      const badgeClasses = isBase 
+        ? "bg-accent/15 text-accent border border-accent/30 font-semibold"
+        : "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-semibold";
+
+      return `
+        <div class="study-card-item rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 text-xs flex flex-col gap-2.5 transition-all hover:border-[var(--text-muted)] group relative shadow-xs" data-card-key="${key}">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${badgeClasses} flex-shrink-0">
+                CH ${card.number}
+              </span>
+              <span class="font-bold uppercase tracking-wider text-[11px] text-[var(--text-primary)] truncate" title="${card.title}">
+                ${card.title}
+              </span>
+            </div>
+            ${!isBase ? `
+              <button class="btn-card-deactivate p-1 rounded hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-accent transition-colors flex-shrink-0" data-key="${key}" title="Deactivate ${card.title}">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
+          </div>
+
+          <!-- Concept Subtitle -->
+          <div class="font-mono text-[10px] text-accent font-medium tracking-wide">
+            ${card.subtitle}
+          </div>
+
+          <!-- Summary / Theory Core -->
+          <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+            ${card.summary}
+          </p>
+
+          <!-- Real World Application Hint -->
+          <div class="p-2 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[10px] text-[var(--text-muted)] flex items-start gap-1.5 leading-snug">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 flex-shrink-0 text-amber-500 mt-0.5"></i>
+            <div>
+              <strong class="text-[var(--text-primary)]">Real World:</strong>
+              <span class="ml-1">${card.realWorldHint}</span>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Links -->
+          <div class="flex items-center gap-2 pt-1 border-t border-[var(--border-color)]">
+            <button class="btn-card-theory flex-1 py-1.5 px-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] hover:border-accent/40 border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)] flex items-center justify-center gap-1.5 transition-all shadow-xs" data-chapter="${card.chapterId}" data-title="${card.title}">
+              <i data-lucide="book-open" class="w-3 h-3 text-accent"></i>
+              <span>Theory</span>
+            </button>
+            <button class="btn-card-realworld flex-1 py-1.5 px-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] hover:border-emerald-500/40 border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)] flex items-center justify-center gap-1.5 transition-all shadow-xs" data-case="${card.realWorldCaseId}" data-title="${card.title}">
+              <i data-lucide="briefcase" class="w-3 h-3 text-emerald-500"></i>
+              <span>Real World</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // Wire deactivate buttons
+    feed.querySelectorAll(".btn-card-deactivate").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const modKey = btn.getAttribute("data-key");
+        if (modKey && this.studioEngine?.state?.modifiers?.[modKey]) {
+          this.studioEngine.state.modifiers[modKey].enabled = false;
+          const toggleEl = document.getElementById(`mod-${modKey}-toggle`);
+          if (toggleEl) toggleEl.checked = false;
+          const accordionEl = document.getElementById(`accordion-${modKey}`);
+          if (accordionEl) accordionEl.classList.add("hidden");
+
+          this.onModifierStateChanged();
+          this.showToast(`Deactivated ${studyCardsData[modKey]?.title || modKey}`);
+        }
+      });
+    });
+
+    // Wire Theory buttons
+    feed.querySelectorAll(".btn-card-theory").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const chId = parseInt(btn.getAttribute("data-chapter"), 10);
+        const title = btn.getAttribute("data-title");
+        this.currentChapterId = chId;
+        this.setMode("theory");
+        this.showToast(`Opened Chapter ${chId}: ${title}`);
+      });
+    });
+
+    // Wire Real World buttons
+    feed.querySelectorAll(".btn-card-realworld").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const caseId = btn.getAttribute("data-case");
+        const title = btn.getAttribute("data-title");
+        this.currentRealWorldCaseId = caseId;
+        this.setMode("real-world");
+        this.showToast(`Opened Real-World Case for ${title}`);
+      });
+    });
+
+    // Render Lucide icons for injected cards
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
   }
 
   updateStudyCard(key) {
@@ -7457,15 +7612,12 @@ class WongApp {
     if (!card) return;
     this.currentStudyCardKey = key;
 
-    const chBadge = document.getElementById("study-card-chapter");
-    const title = document.getElementById("study-card-title");
-    const desc = document.getElementById("study-card-desc");
-    const hint = document.getElementById("study-card-hint");
-
-    if (chBadge) chBadge.textContent = `CH ${card.number} • ${card.title.toUpperCase()}`;
-    if (title) title.textContent = card.subtitle;
-    if (desc) desc.textContent = card.summary;
-    if (hint) hint.textContent = card.realWorldHint;
+    const cardEl = document.querySelector(`.study-card-item[data-card-key="${key}"]`);
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      cardEl.classList.add("ring-2", "ring-accent");
+      setTimeout(() => cardEl.classList.remove("ring-2", "ring-accent"), 1600);
+    }
   }
 
   // ============================================================
@@ -7712,6 +7864,7 @@ class WongApp {
       this.updateStudyCard("anomaly");
     }
 
+    this.syncStudioControlsFromState();
     this.setMode("studio");
     this.showToast(`Imported ${c.title} into Studio Sandbox!`);
   }
