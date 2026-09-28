@@ -220,15 +220,22 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset X</label>
-                  <input type="number" id="input-form-a-offset-x" class="num-input" value="0" min="-250" max="250" step="2">
+              <!-- Offset X -->
+              <div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-[var(--text-secondary)] mb-1">
+                  <span>Offset X</span>
+                  <span id="val-form-a-offset-x" class="text-accent font-bold">0px</span>
                 </div>
-                <div>
-                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset Y</label>
-                  <input type="number" id="input-form-a-offset-y" class="num-input" value="0" min="-250" max="250" step="2">
+                <input type="range" id="input-form-a-offset-x" min="-250" max="250" step="1" value="0" class="w-full">
+              </div>
+
+              <!-- Offset Y -->
+              <div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-[var(--text-secondary)] mb-1">
+                  <span>Offset Y</span>
+                  <span id="val-form-a-offset-y" class="text-accent font-bold">0px</span>
                 </div>
+                <input type="range" id="input-form-a-offset-y" min="-250" max="250" step="1" value="0" class="w-full">
               </div>
 
               <div>
@@ -273,15 +280,22 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset X</label>
-                  <input type="number" id="input-form-b-offset-x" class="num-input" value="65" min="-250" max="250" step="2">
+              <!-- Offset X -->
+              <div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-[var(--text-secondary)] mb-1">
+                  <span>Offset X</span>
+                  <span id="val-form-b-offset-x" class="text-accent font-bold">65px</span>
                 </div>
-                <div>
-                  <label class="text-[10px] font-mono text-[var(--text-secondary)] block mb-1">Offset Y</label>
-                  <input type="number" id="input-form-b-offset-y" class="num-input" value="0" min="-250" max="250" step="2">
+                <input type="range" id="input-form-b-offset-x" min="-250" max="250" step="1" value="65" class="w-full">
+              </div>
+
+              <!-- Offset Y -->
+              <div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-[var(--text-secondary)] mb-1">
+                  <span>Offset Y</span>
+                  <span id="val-form-b-offset-y" class="text-accent font-bold">0px</span>
                 </div>
+                <input type="range" id="input-form-b-offset-y" min="-250" max="250" step="1" value="0" class="w-full">
               </div>
 
               <div>

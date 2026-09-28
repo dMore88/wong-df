@@ -256,16 +256,28 @@ class WongApp {
       this.renderStudio();
     });
 
+    const valOffXA = document.getElementById("val-form-a-offset-x");
     offXA?.addEventListener("input", (e) => {
       const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formA.offsetX = v;
+      if (valOffXA) valOffXA.textContent = `${Math.round(v)}px`;
       this.renderStudio();
     });
+    offXA?.addEventListener("dblclick", () => {
+      offXA.value = 0;
+      offXA.dispatchEvent(new Event("input"));
+    });
 
+    const valOffYA = document.getElementById("val-form-a-offset-y");
     offYA?.addEventListener("input", (e) => {
       const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formA.offsetY = v;
+      if (valOffYA) valOffYA.textContent = `${Math.round(v)}px`;
       this.renderStudio();
+    });
+    offYA?.addEventListener("dblclick", () => {
+      offYA.value = 0;
+      offYA.dispatchEvent(new Event("input"));
     });
 
     rotA?.addEventListener("input", (e) => {
@@ -304,16 +316,28 @@ class WongApp {
       this.renderStudio();
     });
 
+    const valOffXB = document.getElementById("val-form-b-offset-x");
     offXB?.addEventListener("input", (e) => {
       const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formB.offsetX = v;
+      if (valOffXB) valOffXB.textContent = `${Math.round(v)}px`;
       this.renderStudio();
     });
+    offXB?.addEventListener("dblclick", () => {
+      offXB.value = 0;
+      offXB.dispatchEvent(new Event("input"));
+    });
 
+    const valOffYB = document.getElementById("val-form-b-offset-y");
     offYB?.addEventListener("input", (e) => {
       const v = parseFloat(e.target.value) || 0;
       this.studioEngine.state.formB.offsetY = v;
+      if (valOffYB) valOffYB.textContent = `${Math.round(v)}px`;
       this.renderStudio();
+    });
+    offYB?.addEventListener("dblclick", () => {
+      offYB.value = 0;
+      offYB.dispatchEvent(new Event("input"));
     });
 
     rotB?.addEventListener("input", (e) => {
@@ -1176,14 +1200,18 @@ class WongApp {
     setVal("input-form-a-rotation", s.formA.rotation);
     setVal("input-form-a-rotation-slider", s.formA.rotation);
     setVal("input-form-a-offset-x", s.formA.offsetX || 0);
+    setText("val-form-a-offset-x", `${Math.round(s.formA.offsetX || 0)}px`);
     setVal("input-form-a-offset-y", s.formA.offsetY || 0);
+    setText("val-form-a-offset-y", `${Math.round(s.formA.offsetY || 0)}px`);
 
     setVal("input-form-b-width", s.formB.width !== undefined ? s.formB.width : s.formB.scale);
     setVal("input-form-b-height", s.formB.height !== undefined ? s.formB.height : s.formB.scale);
     setVal("input-form-b-rotation", s.formB.rotation);
     setVal("input-form-b-rotation-slider", s.formB.rotation);
     setVal("input-form-b-offset-x", s.formB.offsetX || 0);
+    setText("val-form-b-offset-x", `${Math.round(s.formB.offsetX || 0)}px`);
     setVal("input-form-b-offset-y", s.formB.offsetY || 0);
+    setText("val-form-b-offset-y", `${Math.round(s.formB.offsetY || 0)}px`);
 
     this.setCanvasAspectRatio(s.aspectRatio || "1:1", false);
 
