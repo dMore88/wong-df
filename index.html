@@ -740,8 +740,12 @@
                 <input type="range" id="input-rad-twist" min="-180" max="180" step="5" value="45">
               </div>
 
-              <!-- Visible Structural Lines -->
+              <!-- Structural Options -->
               <div class="space-y-1.5 pt-1 border-t border-[var(--border-color)]">
+                <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
+                  <span>Active Structure (Clip Sector)</span>
+                  <input type="checkbox" id="check-rad-active">
+                </label>
                 <label class="flex items-center justify-between cursor-pointer text-[11px] text-[var(--text-secondary)]">
                   <span>Visible Radial Rays</span>
                   <input type="checkbox" id="check-rad-show-rays">

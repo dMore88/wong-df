@@ -1992,6 +1992,7 @@ const defaultStudioState = {
       rays: 12, // 4 to 28
       rings: 5, // 2 to 10
       spiralTwist: 45, // -180 to 180
+      activeClipping: false,
       showRays: false,
       showRings: false,
       centerX: 0,
@@ -2618,13 +2619,13 @@ class StudioEngine {
       ctx.lineTo(baseX + zBot, cy + cH / 2);
     } else {
       // Basic orthogonal, sliding, alternating
-      ctx.rect(cx - cW / 2 + 0.5, cy - cH / 2 + 0.5, cW - 1, cH - 1);
+      ctx.rect(cx - cW / 2, cy - cH / 2, cW, cH);
     }
     ctx.closePath();
   }
 
   // Render the repetition / structural grid with similarity and gradation kinematics
-  renderRepetitionGrid(ctx, width, height, palette) {
+  renderRepetitionGrid(ctx, width, height, palette, marginParam, usableWParam, usableHParam) {
     const rep = this.state.modifiers.repetition;
     const struct = this.state.modifiers.structure;
     const sim = this.state.modifiers.similarity;
@@ -2636,9 +2637,9 @@ class StudioEngine {
     const cols = Math.max(1, rep.cols);
     const rows = Math.max(1, rep.rows);
 
-    const margin = Math.max(20, Math.min(width, height) * 0.05);
-    const usableW = width - margin * 2;
-    const usableH = height - margin * 2;
+    const margin = marginParam !== undefined ? marginParam : Math.round(Math.max(20, Math.min(width, height) * 0.05));
+    const usableW = usableWParam !== undefined ? usableWParam : width - margin * 2;
+    const usableH = usableHParam !== undefined ? usableHParam : height - margin * 2;
 
     // Calculate column widths and x positions (Dual rhythmic interval support)
     const colWidths = [];
@@ -2696,10 +2697,10 @@ class StudioEngine {
       }
     }
 
-    // Wrap in outer bounding clip so shapes never bleed outside canvas
+    // Wrap in outer bounding clip so shapes never bleed outside master safe bounds
     ctx.save();
     ctx.beginPath();
-    ctx.rect(2, 2, width - 4, height - 4);
+    ctx.rect(margin, margin, usableW, usableH);
     ctx.clip();
 
     const seed = sim.seed || 42;
@@ -2811,35 +2812,31 @@ class StudioEngine {
           }
         }
 
-        // Soft damping to ensure displaced module centers remain safely within canvas
-        const safePad = Math.max(14, Math.min(cW, cH) * 0.35);
-        cx = Math.max(safePad, Math.min(width - safePad, cx));
-        cy = Math.max(safePad, Math.min(height - safePad, cy));
-
-        ctx.save();
-
-        const isOddCell = (r + c) % 2 === 1;
-        let fgColor = palette.fg;
-        let bgColor = palette.bg;
-
-        // Checkerboard inversion
-        if (rep.checkerInvert && isOddCell) {
+        const renderCell = (cellCx, cellCy, cellStartX) => {
           ctx.save();
-          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cW, cH, rep, startX);
-          ctx.fillStyle = palette.fg;
-          ctx.fill();
-          ctx.restore();
-          fgColor = palette.bg;
-          bgColor = palette.fg;
-        }
 
-        // Active clipping: restrict drawing strictly to cell boundaries
-        if (rep.activeClipping) {
-          this.buildCellPath(ctx, r, c, rows, cols, cx, cy, cW, cH, rep, startX);
-          ctx.clip();
-        }
+          const isOddCell = (r + c) % 2 === 1;
+          let fgColor = palette.fg;
+          let bgColor = palette.bg;
 
-        ctx.translate(cx, cy);
+          // Checkerboard inversion
+          if (rep.checkerInvert && isOddCell) {
+            ctx.save();
+            this.buildCellPath(ctx, r, c, rows, cols, cellCx, cellCy, cW, cH, rep, cellStartX);
+            ctx.fillStyle = palette.fg;
+            ctx.fill();
+            ctx.restore();
+            fgColor = palette.bg;
+            bgColor = palette.fg;
+          }
+
+          // Active clipping: restrict drawing strictly to cell boundaries
+          if (rep.activeClipping) {
+            this.buildCellPath(ctx, r, c, rows, cols, cellCx, cellCy, cW, cH, rep, cellStartX);
+            ctx.clip();
+          }
+
+          ctx.translate(cellCx, cellCy);
 
         // Concentration directional flow
         if (conc && conc.enabled && conc.alignToField && concAngle !== 0) {
@@ -2959,7 +2956,7 @@ class StudioEngine {
             if (factor > 0.6) {
               // Disintegrated void
               ctx.restore();
-              continue;
+              return;
             } else if (factor > 0.15) {
               // Shattered debris
               ctx.translate(pRand(51) * 26 * severity, pRand(52) * 26 * severity);
@@ -2998,8 +2995,22 @@ class StudioEngine {
         const isAlt = (r + c) % 2 === 1;
         this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
         ctx.restore();
+      };
+
+      // Draw primary cell
+      renderCell(cx, cy, startX);
+
+      // Seamless repeat wrapping in sliding (brick) grid
+      if (rep.gridType === "sliding" && r % 2 === 1) {
+        const slide = rep.slideOffset ?? 0.5;
+        if (slide > 0 && c === cols - 1) {
+          renderCell(cx - usableW, cy, startX - usableW);
+        } else if (slide < 0 && c === 0) {
+          renderCell(cx + usableW, cy, startX + usableW);
+        }
       }
     }
+  }
 
     ctx.restore(); // end outer clip
 
@@ -3014,41 +3025,78 @@ class StudioEngine {
         const y = r === rows ? margin + usableH : rowStarts[r];
         ctx.beginPath();
         ctx.moveTo(margin, y);
-        ctx.lineTo(width - margin, y);
+        ctx.lineTo(margin + usableW, y);
         ctx.stroke();
       }
 
-      // Draw vertical / deformed lines
-      for (let c = 0; c <= cols; c++) {
-        const baseX = c === cols ? margin + usableW : colStarts[c];
-        ctx.beginPath();
+      if (rep.gridType === "sliding") {
+        // True running-bond staggered vertical brick joints
+        for (let r = 0; r < rows; r++) {
+          const yTop = rowStarts[r];
+          const yBot = r === rows - 1 ? margin + usableH : rowStarts[r + 1];
+          const isShifted = r % 2 === 1;
+          const shift = isShifted ? colWidths[0] * (rep.slideOffset ?? 0.5) : 0;
 
-        if (rep.gridType === "sheared") {
-          const rad = (rep.shearAngle * Math.PI) / 180;
-          const topX = baseX - (rows / 2) * Math.tan(rad) * (rowHeights[0] * 0.6);
-          const botX = baseX + (rows / 2) * Math.tan(rad) * (rowHeights[0] * 0.6);
-          ctx.moveTo(topX, margin);
-          ctx.lineTo(botX, height - margin);
-        } else if (rep.gridType === "curved") {
-          ctx.moveTo(baseX, margin);
-          const steps = 30;
-          for (let s = 1; s <= steps; s++) {
-            const frac = s / steps;
-            const y = margin + frac * usableH;
-            const wave = Math.sin(frac * Math.PI * 2) * rep.curveIntensity;
-            ctx.lineTo(baseX + wave, y);
+          // Left border
+          ctx.beginPath();
+          ctx.moveTo(margin, yTop);
+          ctx.lineTo(margin, yBot);
+          ctx.stroke();
+
+          // Internal vertical joints
+          for (let c = 0; c <= cols; c++) {
+            const rawX = (c === cols ? margin + usableW : colStarts[c]) + shift;
+            let x = rawX;
+            if (isShifted && x > margin + usableW + 0.1) {
+              x -= usableW;
+            }
+            if (x > margin + 0.5 && x < margin + usableW - 0.5) {
+              ctx.beginPath();
+              ctx.moveTo(x, yTop);
+              ctx.lineTo(x, yBot);
+              ctx.stroke();
+            }
           }
-        } else if (rep.gridType === "zigzag") {
-          ctx.moveTo(baseX, margin);
-          for (let r = 0; r < rows; r++) {
-            const zig = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
-            ctx.lineTo(baseX + zig, margin + (r + 1) * rowHeights[r]);
-          }
-        } else {
-          ctx.moveTo(baseX, margin);
-          ctx.lineTo(baseX, height - margin);
+
+          // Right border
+          ctx.beginPath();
+          ctx.moveTo(margin + usableW, yTop);
+          ctx.lineTo(margin + usableW, yBot);
+          ctx.stroke();
         }
-        ctx.stroke();
+      } else {
+        // Draw vertical / deformed lines
+        for (let c = 0; c <= cols; c++) {
+          const baseX = c === cols ? margin + usableW : colStarts[c];
+          ctx.beginPath();
+
+          if (rep.gridType === "sheared") {
+            const rad = (rep.shearAngle * Math.PI) / 180;
+            const topX = baseX - (rows / 2) * Math.tan(rad) * (rowHeights[0] * 0.6);
+            const botX = baseX + (rows / 2) * Math.tan(rad) * (rowHeights[0] * 0.6);
+            ctx.moveTo(topX, margin);
+            ctx.lineTo(botX, margin + usableH);
+          } else if (rep.gridType === "curved") {
+            ctx.moveTo(baseX, margin);
+            const steps = 30;
+            for (let s = 1; s <= steps; s++) {
+              const frac = s / steps;
+              const y = margin + frac * usableH;
+              const wave = Math.sin(frac * Math.PI * 2) * rep.curveIntensity;
+              ctx.lineTo(baseX + wave, y);
+            }
+          } else if (rep.gridType === "zigzag") {
+            ctx.moveTo(baseX, margin);
+            for (let r = 0; r < rows; r++) {
+              const zig = (r % 2 === 0 ? 1 : -1) * rep.curveIntensity;
+              ctx.lineTo(baseX + zig, margin + (r + 1) * rowHeights[r]);
+            }
+          } else {
+            ctx.moveTo(baseX, margin);
+            ctx.lineTo(baseX, margin + usableH);
+          }
+          ctx.stroke();
+        }
       }
 
       ctx.restore();
@@ -3087,7 +3135,7 @@ class StudioEngine {
   }
 
   // Render the polar radiation layout (Chapter 7)
-  renderRadiation(ctx, width, height, palette) {
+  renderRadiation(ctx, width, height, palette, marginParam, usableWParam, usableHParam) {
     const rad = this.state.modifiers.radiation;
     const grad = this.state.modifiers.gradation;
     const sim = this.state.modifiers.similarity;
@@ -3095,8 +3143,8 @@ class StudioEngine {
     const contrast = this.state.modifiers.contrast;
     const conc = this.state.modifiers.concentration;
 
-    const margin = Math.max(20, Math.min(width, height) * 0.05);
-    const usableW = width - margin * 2;
+    const margin = marginParam !== undefined ? marginParam : Math.round(Math.max(20, Math.min(width, height) * 0.05));
+    const usableW = usableWParam !== undefined ? usableWParam : width - margin * 2;
     const usableH = height - margin * 2;
     const isMultiCenter = rad.scheme === "multi_center";
     const maxR = Math.min(usableW, usableH) * (isMultiCenter ? 0.32 : 0.42);
@@ -3116,25 +3164,30 @@ class StudioEngine {
         ]
       : [{ x: cx, y: cy }];
 
-    // Clip to canvas area
+    // Clip to master safe bounds area
     ctx.save();
     ctx.beginPath();
-    ctx.rect(2, 2, width - 4, height - 4);
+    ctx.rect(margin, margin, usableW, usableH);
     ctx.clip();
 
     const seed = sim.seed || 42;
 
     centers.forEach((center, centerIdx) => {
       for (let i = 1; i <= rings; i++) {
-        const ringRadius = (i / rings) * maxR;
+        const rInner = ((i - 1) / rings) * maxR;
+        const rOuter = (i / rings) * maxR;
+        const ringRadius = (rInner + rOuter) * 0.5;
 
         for (let j = 0; j < rays; j++) {
-          const baseAngle = (j / rays) * Math.PI * 2;
+          const rayAngleStart = (j / rays) * Math.PI * 2;
+          const rayAngleEnd = ((j + 1) / rays) * Math.PI * 2;
+          const baseAngle = (rayAngleStart + rayAngleEnd) * 0.5;
           let angle = baseAngle;
 
           // Spiral twist
+          const twistFraction = ringRadius / maxR;
           if (rad.scheme === "spiral") {
-            angle += twistRad * (i / rings);
+            angle += twistRad * twistFraction;
           }
 
           const x = center.x + ringRadius * Math.cos(angle);
@@ -3217,6 +3270,32 @@ class StudioEngine {
           posY = Math.max(safePad, Math.min(height - safePad, posY));
 
           ctx.save();
+
+          // Active clipping: restrict drawing strictly to polar sector boundaries
+          if (rad.activeClipping) {
+            ctx.beginPath();
+            let aOuterStart = rayAngleStart;
+            let aOuterEnd = rayAngleEnd;
+            let aInnerStart = rayAngleStart;
+            let aInnerEnd = rayAngleEnd;
+
+            if (rad.scheme === "spiral") {
+              aOuterStart += twistRad * (rOuter / maxR);
+              aOuterEnd += twistRad * (rOuter / maxR);
+              aInnerStart += twistRad * (rInner / maxR);
+              aInnerEnd += twistRad * (rInner / maxR);
+            }
+
+            ctx.arc(center.x, center.y, rOuter, aOuterStart, aOuterEnd, false);
+            if (rInner > 0.5) {
+              ctx.arc(center.x, center.y, rInner, aInnerEnd, aInnerStart, true);
+            } else {
+              ctx.lineTo(center.x, center.y);
+            }
+            ctx.closePath();
+            ctx.clip();
+          }
+
           ctx.translate(posX, posY);
 
           // Concentration directional flow
@@ -3454,9 +3533,12 @@ class StudioEngine {
     const bgColor = this.state.invertFigureGround ? palette.fg : palette.bg;
 
     // 2. Architectural Guide Grid & Safe Bounds (faint red grid matching wireframe)
+    const margin = Math.round(Math.max(20, Math.min(width, height) * 0.05));
+    const usableW = width - margin * 2;
+    const usableH = height - margin * 2;
+
     if (this.state.showSafeBounds) {
       ctx.save();
-      const margin = 28;
 
       // Draw faint red architectural coordinate grid
       ctx.strokeStyle = palette.accent;
@@ -3481,7 +3563,7 @@ class StudioEngine {
       ctx.globalAlpha = 0.5;
       ctx.setLineDash([4, 4]);
       ctx.lineWidth = 1.2;
-      ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+      ctx.strokeRect(margin, margin, usableW, usableH);
 
       ctx.restore();
     }
@@ -3491,11 +3573,16 @@ class StudioEngine {
       this.drawIsometricGuides(ctx, width, height, palette);
     }
 
-    // 3. Render Pipeline: Radiation takes spatial precedence over Cartesian grid
+    // 3. Render Pipeline (Artboard Safe-Frame clipping: strictly contained within red master guides)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin, margin, usableW, usableH);
+    ctx.clip();
+
     if (this.state.modifiers.radiation.enabled) {
-      this.renderRadiation(ctx, width, height, palette);
+      this.renderRadiation(ctx, width, height, palette, margin, usableW, usableH);
     } else if (this.state.modifiers.repetition.enabled) {
-      this.renderRepetitionGrid(ctx, width, height, palette);
+      this.renderRepetitionGrid(ctx, width, height, palette, margin, usableW, usableH);
     } else {
       // Single Module Study in Center (Pure Form A & Form B Base Unit)
       ctx.save();
@@ -3504,6 +3591,8 @@ class StudioEngine {
       this.renderModule(ctx, 1.25 * aspectScale, fgColor, bgColor);
       ctx.restore();
     }
+
+    ctx.restore(); // end master artboard clip
 
     // 4. Subtle center reference dot (when in single module mode)
     if (!this.state.modifiers.repetition.enabled && !this.state.modifiers.structure.enabled && !this.state.modifiers.radiation.enabled) {
@@ -6640,6 +6729,11 @@ class WongApp {
       this.renderStudio();
     });
 
+    document.getElementById("check-rad-active")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.radiation.activeClipping = e.target.checked;
+      this.renderStudio();
+    });
+
     document.getElementById("check-rad-show-rays")?.addEventListener("change", (e) => {
       this.studioEngine.state.modifiers.radiation.showRays = e.target.checked;
       this.renderStudio();
@@ -7231,7 +7325,8 @@ class WongApp {
     setVal("input-rad-rings", s.modifiers.radiation.rings);
     setText("val-rad-rings", `${s.modifiers.radiation.rings} rings`);
     setVal("input-rad-twist", s.modifiers.radiation.spiralTwist);
-    setText("val-rad-twist", `${s.modifiers.radiation.spiralTwist}°`);
+    const checkRadActive = document.getElementById("check-rad-active");
+    if (checkRadActive) checkRadActive.checked = !!s.modifiers.radiation.activeClipping;
     const checkRadRays = document.getElementById("check-rad-show-rays");
     if (checkRadRays) checkRadRays.checked = s.modifiers.radiation.showRays;
     const checkRadRings = document.getElementById("check-rad-show-rings");

@@ -718,6 +718,11 @@ class WongApp {
       this.renderStudio();
     });
 
+    document.getElementById("check-rad-active")?.addEventListener("change", (e) => {
+      this.studioEngine.state.modifiers.radiation.activeClipping = e.target.checked;
+      this.renderStudio();
+    });
+
     document.getElementById("check-rad-show-rays")?.addEventListener("change", (e) => {
       this.studioEngine.state.modifiers.radiation.showRays = e.target.checked;
       this.renderStudio();
@@ -1309,7 +1314,8 @@ class WongApp {
     setVal("input-rad-rings", s.modifiers.radiation.rings);
     setText("val-rad-rings", `${s.modifiers.radiation.rings} rings`);
     setVal("input-rad-twist", s.modifiers.radiation.spiralTwist);
-    setText("val-rad-twist", `${s.modifiers.radiation.spiralTwist}°`);
+    const checkRadActive = document.getElementById("check-rad-active");
+    if (checkRadActive) checkRadActive.checked = !!s.modifiers.radiation.activeClipping;
     const checkRadRays = document.getElementById("check-rad-show-rays");
     if (checkRadRays) checkRadRays.checked = s.modifiers.radiation.showRays;
     const checkRadRings = document.getElementById("check-rad-show-rings");
