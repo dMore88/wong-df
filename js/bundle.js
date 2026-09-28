@@ -2926,16 +2926,15 @@ class StudioEngine {
           const severity = (anom.intensity ?? 65) / 100;
 
           if (anom.type === "focal") {
-            const focalRadius = Math.max(cW, cH) * 0.75;
-            if (dist < focalRadius) {
+            if (inZone) {
               cellShapeA = anom.anomalousShape || "triangle_eq";
-              ctx.rotate((Math.PI / 4) * severity);
+              ctx.rotate((Math.PI / 4) * severity * factor);
               cellScaleMul *= (1 + 0.35 * severity);
               if (anom.highlightColor) cellFg = palette.accent;
             }
           } else if (anom.type === "fracture") {
             const corridor = anom.radius * 0.45;
-            if (Math.abs(cx - epiX) < corridor) {
+            if (inZone && Math.abs(cx - epiX) < corridor) {
               const jag = Math.sin(cy * 0.08) * (18 * severity);
               const shearY = (cy > epiY ? 1 : -1) * (36 * severity) + jag;
               const shearX = (cx > epiX ? 1 : -1) * (10 * severity);
@@ -3370,16 +3369,15 @@ class StudioEngine {
             const severity = (anom.intensity ?? 65) / 100;
 
             if (anom.type === "focal") {
-              const focalRadius = maxR * 0.28;
-              if (dist < focalRadius) {
+              if (inZone) {
                 cellShapeA = anom.anomalousShape || "triangle_eq";
-                ctx.rotate((Math.PI / 4) * severity);
+                ctx.rotate((Math.PI / 4) * severity * factor);
                 cellScaleMul *= (1 + 0.35 * severity);
                 if (anom.highlightColor) cellFg = palette.accent;
               }
             } else if (anom.type === "fracture") {
               const corridor = anom.radius * 0.45;
-              if (Math.abs(x - epiX) < corridor) {
+              if (inZone && Math.abs(x - epiX) < corridor) {
                 const jag = Math.sin(y * 0.08) * (18 * severity);
                 const shearY = (y > epiY ? 1 : -1) * (36 * severity) + jag;
                 const shearX = (x > epiX ? 1 : -1) * (10 * severity);
