@@ -367,10 +367,43 @@ class WongApp {
       this.renderStudio();
     });
 
+    // Universal Segmented Controls / Chips & Icon Buttons handler
+    document.querySelectorAll("[data-for]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.dataset.for;
+        const val = btn.dataset.value;
+        const select = document.getElementById(targetId);
+        if (!select) return;
+
+        // Update active class for all buttons sharing this target select
+        document.querySelectorAll(`[data-for="${targetId}"]`).forEach(b => {
+          if (b === btn) b.classList.add("active");
+          else b.classList.remove("active");
+        });
+
+        // Update badge if any exists
+        const nameBadge = document.getElementById(`${targetId}-badge`);
+        if (nameBadge) {
+          nameBadge.textContent = btn.getAttribute("title") || val;
+        }
+
+        // Update underlying select and dispatch change event
+        if (select.value !== val) {
+          select.value = val;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    });
+
     // Interrelation Select
     const interrelationSelect = document.getElementById("interrelation-select");
     interrelationSelect?.addEventListener("change", (e) => {
       this.studioEngine.state.interrelation = e.target.value;
+      const nameBadge = document.getElementById("interrelation-select-badge");
+      if (nameBadge) {
+        const activeBtn = document.querySelector(`[data-for="interrelation-select"][data-value="${e.target.value}"]`);
+        if (activeBtn) nameBadge.textContent = activeBtn.getAttribute("title") || e.target.value;
+      }
       this.renderStudio();
     });
 
@@ -401,23 +434,9 @@ class WongApp {
       this.onModifierStateChanged();
     });
 
-    // Repetition Grid Variation (Icon Buttons + Select Sync)
-    const gridTypeBtns = document.querySelectorAll(".grid-type-btn");
-    gridTypeBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        gridTypeBtns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        const val = btn.dataset.value;
-        const repSelect = document.getElementById("rep-grid-type");
-        if (repSelect) repSelect.value = val;
-        this.studioEngine.state.modifiers.repetition.gridType = val;
-        this.renderStudio();
-      });
-    });
-
     document.getElementById("rep-grid-type")?.addEventListener("change", (e) => {
       const val = e.target.value;
-      gridTypeBtns.forEach(b => {
+      document.querySelectorAll(`[data-for="rep-grid-type"]`).forEach(b => {
         if (b.dataset.value === val) b.classList.add("active");
         else b.classList.remove("active");
       });
@@ -1127,10 +1146,20 @@ class WongApp {
 
   syncStudioControlsFromState() {
     const s = this.studioEngine.state;
-    // Sliders
+    // Sliders & Selects
     const setVal = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.value = val;
+      // Sync segmented buttons / chips if any
+      document.querySelectorAll(`[data-for="${id}"]`).forEach(btn => {
+        if (btn.dataset.value === String(val)) {
+          btn.classList.add("active");
+          const nameBadge = document.getElementById(`${id}-badge`);
+          if (nameBadge) nameBadge.textContent = btn.getAttribute("title") || val;
+        } else {
+          btn.classList.remove("active");
+        }
+      });
     };
     const setText = (id, txt) => {
       const el = document.getElementById(id);

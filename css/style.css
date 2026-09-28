@@ -228,11 +228,12 @@ input:checked + .slider-toggle:before {
 }
 
 /* Grid Structure Variation Icon Button */
-.grid-type-btn {
+.grid-type-btn,
+.studio-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 6px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
@@ -240,15 +241,47 @@ input:checked + .slider-toggle:before {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.grid-type-btn:hover {
+.grid-type-btn:hover,
+.studio-icon-btn:hover {
   border-color: var(--text-muted);
   color: var(--text-primary);
+  background: var(--bg-card);
 }
-.grid-type-btn.active {
+.grid-type-btn.active,
+.studio-icon-btn.active {
   background: var(--text-primary);
   color: var(--bg-card);
   border-color: var(--text-primary);
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.studio-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.studio-chip-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+.studio-chip-btn.active {
+  background: var(--text-primary);
+  color: var(--bg-card);
+  border-color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 /* Accordion transition helper */
