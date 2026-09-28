@@ -2989,8 +2989,9 @@ class StudioEngine {
           }
         }
 
-        const baseScale = Math.min(cW, cH) * 0.45;
-        const normScale = (baseScale / 100) * cellScaleMul * concScaleMul;
+        const scaleUnit = 1.25 * Math.min(1.0, Math.min(width, height) / 600);
+        const cellRatio = Math.min(cW / usableW, cH / usableH);
+        const normScale = scaleUnit * cellRatio * cellScaleMul * concScaleMul;
         const isAlt = (r + c) % 2 === 1;
         this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
         ctx.restore();
@@ -3431,11 +3432,17 @@ class StudioEngine {
             }
           }
 
-          // Natural centrifugal growth scale: outer modules larger, inner smaller
-          const growthScale = (0.24 + (i / rings) * 0.38) * cellScaleMul * concScaleMul;
+          // Natural centrifugal growth scale: outer modules larger, inner smaller, proportional to sector size
+          const scaleUnit = 1.25 * Math.min(1.0, Math.min(width, height) / 600);
+          const ringThickness = maxR / rings;
+          const arcWidth = (ringRadius * 2 * Math.PI) / rays;
+          const sectorSize = Math.min(ringThickness, Math.max(ringThickness * 0.5, arcWidth));
+          const sectorRatio = sectorSize / usableW;
+          const growthFactor = 0.75 + (i / rings) * 0.45;
+          const radScaleMul = isMultiCenter ? 0.7 : 1.0;
+          const normScale = scaleUnit * sectorRatio * growthFactor * radScaleMul * cellScaleMul * concScaleMul;
           const isAlt = (i + j) % 2 === 1;
-          const radScaleMul = isMultiCenter ? 0.48 : 0.68;
-          this.renderModule(ctx, growthScale * radScaleMul, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
+          this.renderModule(ctx, normScale, cellFg, cellBg, null, null, cellShapeA, cellWireframe, isAlt);
           ctx.restore();
         }
       }
