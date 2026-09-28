@@ -82,12 +82,10 @@ Para cumplir esto, el editor implementa 3 reglas mecánicas:
 
 ---
 
-## 5. Colofón Editorial
+## 5. Indicador de Resolución y Lienzo
+ 
+ El pie del canvas (`#studio-resolution-text`) muestra la resolución activa del canvas y el soporte HiDPI/Retina (ej. `600 × 600 PX • RETINA HiDPI`, `600 × 800 PX • RETINA HiDPI`). Los principios de diseño aplicados se estudian de forma interactiva y detallada en la columna izquierda mediante las **Study Cards**.
 
-El texto ubicado al pie del canvas (`#studio-colophon-text`) se deriva de `StudioEngine.getColophonString()` y enumera los principios matemáticamente reflejados en la composición actual:  
-`USED ON THIS DESIGN: FORM / REPETITION / GRADATION / TEXTURE`
-
----
 
 ## 6. Proporciones de Canvas (Aspect Ratios)
 
